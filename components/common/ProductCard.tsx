@@ -14,9 +14,6 @@ interface ProductCardProps {
 const ProductCard: React.FC<ProductCardProps> = ({ product, onClick, isSaved, onSaveToggle }) => {
   const isOutOfStock = product.stock === 0;
   
-  // حساب الربح التقريبي المعروض للمسوق
-  const minProfit = product.min_sell_price - product.price;
-
   return (
     <div 
       onClick={onClick}
@@ -69,7 +66,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onClick, isSaved, on
         
         {/* Pricing Info */}
         <div className="mt-auto pt-2 flex flex-col gap-2">
-            {/* Price Line (Strict Horizontal Layout) */}
+            {/* Price Line (Wholesale Only) */}
             <div className="flex items-center gap-1.5 whitespace-nowrap overflow-hidden">
                 <span className="text-[11px] text-gray-500 dark:text-gray-400 font-bold shrink-0">سعر الجملة:</span>
                 <div className="flex items-baseline gap-0.5 shrink-0">
@@ -79,20 +76,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onClick, isSaved, on
                     <span className="text-[9px] font-bold text-gray-400 uppercase">د.ع</span>
                 </div>
             </div>
-
-            {/* Profit Badge/Ribbon */}
-            {!isOutOfStock && minProfit > 0 && (
-                <div className="bg-green-50 dark:bg-green-900/20 rounded-xl py-1.5 px-2.5 border border-green-100 dark:border-green-800/30 flex items-center justify-between">
-                    <span className="text-green-600 dark:text-green-400 text-[10px] font-extrabold">ربحك المقترح</span>
-                    <span className="text-green-700 dark:text-green-400 text-[11px] font-black">+{minProfit.toLocaleString()}</span>
-                </div>
-            )}
             
-            {product.promo && !isOutOfStock && minProfit <= 0 && (
-                <div className="bg-orange-50 dark:bg-orange-900/20 rounded-xl py-1.5 px-2.5 border border-orange-100 dark:border-orange-800/30 text-center">
-                    <span className="text-orange-600 dark:text-orange-400 text-[10px] font-extrabold">{product.promo}</span>
-                </div>
-            )}
+            {/* تم حذف وسم الـ Promo البرتقالي من هنا كما طلب المستخدم */}
         </div>
       </div>
     </div>

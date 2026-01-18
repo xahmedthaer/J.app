@@ -68,7 +68,9 @@ const AdminUsersView: React.FC<{
     );
 };
 
-// ... (Keeping WithdrawalDetailsModal & AdminWithdrawalsView essentially same but cleaning up if needed. Reusing existing logic)
+// --- Withdrawal logic components ---
+
+// FIX: Added missing WithdrawalDetailsModal component for AdminWithdrawalsView
 const WithdrawalDetailsModal: React.FC<{
     request: WithdrawalRequest;
     user: User | undefined;
@@ -80,7 +82,7 @@ const WithdrawalDetailsModal: React.FC<{
     const handleCopy = (text: string) => navigator.clipboard.writeText(text);
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex justify-center items-center p-4" onClick={onClose}>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-center items-center p-4" onClick={onClose}>
             <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl animate-slide-up" onClick={e => e.stopPropagation()}>
                 {/* Header */}
                 <div className="p-4 border-b dark:border-gray-700 flex justify-between items-center">
@@ -191,6 +193,7 @@ const WithdrawalDetailsModal: React.FC<{
     );
 };
 
+// FIX: Added missing AdminWithdrawalsView component
 const AdminWithdrawalsView: React.FC<{
   withdrawalRequests: WithdrawalRequest[];
   onProcessWithdrawal: (request: WithdrawalRequest) => void;
@@ -223,7 +226,7 @@ const AdminWithdrawalsView: React.FC<{
     };
 
     return (
-        <div className="p-6">
+        <div className="p-4">
             {selectedRequest && (
                 <WithdrawalDetailsModal 
                     request={selectedRequest}
@@ -234,50 +237,49 @@ const AdminWithdrawalsView: React.FC<{
                 />
             )}
 
-            <div className="flex justify-between items-center mb-6">
-                <div className="bg-gray-100 dark:bg-gray-800 p-1 rounded-xl flex text-sm font-bold shadow-inner">
+            <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">إدارة السحوبات</h3>
+                <div className="bg-gray-100 dark:bg-gray-700 p-1 rounded-lg flex text-sm font-bold">
                     <button 
                         onClick={() => setFilter('completed')}
-                        className={`px-6 py-2.5 rounded-lg transition-all ${filter === 'completed' ? 'bg-white dark:bg-gray-700 text-green-600 shadow-sm' : 'text-gray-500'}`}
+                        className={`px-4 py-2 rounded-md transition-all ${filter === 'completed' ? 'bg-white dark:bg-gray-600 text-green-600 shadow-sm' : 'text-gray-500'}`}
                     >
                         مكتملة
                     </button>
                     <button 
                         onClick={() => setFilter('pending')}
-                        className={`px-6 py-2.5 rounded-lg transition-all ${filter === 'pending' ? 'bg-white dark:bg-gray-700 text-yellow-600 shadow-sm' : 'text-gray-500'}`}
+                        className={`px-4 py-2 rounded-md transition-all ${filter === 'pending' ? 'bg-white dark:bg-gray-600 text-yellow-600 shadow-sm' : 'text-gray-500'}`}
                     >
                         غير مكتملة
                     </button>
                 </div>
-                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">إدارة السحوبات</h3>
             </div>
 
              {filteredRequests.length > 0 ? (
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div className="space-y-3">
                     {filteredRequests.map(request => {
                         const user = getUser(request.user_id);
                         return (
                             <div 
                                 key={request.id} 
                                 onClick={() => setSelectedRequest(request)}
-                                className="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 hover:border-primary/50 cursor-pointer transition-all active:scale-[0.99] shadow-sm hover:shadow-md"
+                                className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 hover:border-primary cursor-pointer transition-all active:scale-98 shadow-sm"
                             >
                                  <div className="flex justify-between items-start">
                                     <div className="text-left">
-                                        <p className="font-extrabold text-2xl text-primary dark:text-primary-light">{request.amount.toLocaleString()}</p>
-                                        <p className="text-xs font-bold text-gray-400 mt-1">د.ع</p>
-                                        <span className={`text-xs px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 w-fit mt-3 ${request.status === 'pending' ? 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20' : 'bg-green-50 text-green-700 dark:bg-green-900/20'}`}>
+                                        <p className="font-bold text-lg text-primary dark:text-primary-light">{request.amount.toLocaleString()} د.ع</p>
+                                        <span className={`text-xs px-2 py-1 rounded-full font-bold flex items-center gap-1 w-fit mt-1 ${request.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
                                             {request.status === 'pending' ? <ClockIcon className="w-3 h-3"/> : <CheckCircleIcon className="w-3 h-3"/>}
                                             {request.status === 'pending' ? 'قيد الانتظار' : 'تم التحويل'}
                                         </span>
                                     </div>
                                     <div className="text-right">
-                                        <p className="font-bold text-lg text-gray-800 dark:text-gray-200">{user?.name || 'مستخدم محذوف'}</p>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 flex items-center justify-end gap-2 bg-gray-50 dark:bg-gray-700/50 px-3 py-1 rounded-lg">
-                                            <span dir="ltr" className="font-mono">{request.wallet_number}</span>
-                                            <WalletIcon className="w-4 h-4"/>
+                                        <p className="font-bold text-gray-800 dark:text-gray-200">{user?.name || 'مستخدم محذوف'}</p>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center justify-end gap-1">
+                                            <span dir="ltr">{request.wallet_number}</span>
+                                            <WalletIcon className="w-3 h-3"/>
                                         </p>
-                                        <p className="text-xs text-gray-400 mt-3">{new Date(request.request_date || request.created_at!).toLocaleDateString('ar-IQ')}</p>
+                                        <p className="text-xs text-gray-400 mt-1">{new Date(request.request_date || request.created_at!).toLocaleDateString('ar-IQ')}</p>
                                     </div>
                                 </div>
                             </div>
@@ -285,19 +287,43 @@ const AdminWithdrawalsView: React.FC<{
                     })}
                  </div>
              ) : (
-                <div className="flex flex-col items-center justify-center py-20 text-gray-400 dark:text-gray-500 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-3xl">
-                    <MoneyBillTransferIcon className="w-20 h-20 mb-4 opacity-20"/>
-                    <p className="text-lg">لا توجد طلبات في هذه القائمة.</p>
+                <div className="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-gray-500">
+                    <MoneyBillTransferIcon className="w-16 h-16 mb-2 opacity-20"/>
+                    <p>لا توجد طلبات في هذه القائمة.</p>
                 </div>
              )}
         </div>
     );
 };
 
-// =================================================================
-// MAIN ADMIN DASHBOARD COMPONENT WITH SIDEBAR LAYOUT
-// =================================================================
+const SidebarItem: React.FC<{
+    icon: React.ElementType;
+    label: string;
+    isActive: boolean;
+    onClick: () => void;
+    badgeCount?: number;
+}> = ({ icon: Icon, label, isActive, onClick, badgeCount }) => (
+    <button
+        onClick={onClick}
+        className={`w-full flex items-center justify-between p-3 rounded-xl mb-1 transition-all duration-200 group ${
+            isActive 
+            ? 'bg-primary text-white shadow-md shadow-primary/30' 
+            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+        }`}
+    >
+        <div className="flex items-center gap-3">
+            <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-gray-500 dark:text-gray-400 group-hover:text-primary'}`} strokeWidth={2} />
+            <span className={`font-bold text-sm ${isActive ? 'text-white' : ''}`}>{label}</span>
+        </div>
+        {badgeCount !== undefined && badgeCount > 0 && (
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isActive ? 'bg-white/20 text-white' : 'bg-red-100 text-red-600'}`}>
+                {badgeCount > 99 ? '99+' : badgeCount}
+            </span>
+        )}
+    </button>
+);
 
+// FIX: Added missing AdminDashboardPageProps interface
 interface AdminDashboardPageProps {
   products: Product[];
   onAddProduct: (product: Omit<Product, 'id'>) => void;
@@ -328,39 +354,10 @@ interface AdminDashboardPageProps {
   onUpdateCoupon: (coupon: Coupon) => void;
   onDeleteCoupon: (couponId: string) => void;
   currentUser?: User | null; 
-  
   view?: AdminView; 
   onViewChange?: (view: AdminView) => void;
   onAdminUpdateOrder: (orderId: string, updates: Partial<Order>) => void;
 }
-
-// Sidebar Item Component
-const SidebarItem: React.FC<{
-    icon: React.ElementType;
-    label: string;
-    isActive: boolean;
-    onClick: () => void;
-    badgeCount?: number;
-}> = ({ icon: Icon, label, isActive, onClick, badgeCount }) => (
-    <button
-        onClick={onClick}
-        className={`w-full flex items-center justify-between p-3 rounded-xl mb-1 transition-all duration-200 group ${
-            isActive 
-            ? 'bg-primary text-white shadow-md shadow-primary/30' 
-            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-        }`}
-    >
-        <div className="flex items-center gap-3">
-            <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-gray-500 dark:text-gray-400 group-hover:text-primary'}`} strokeWidth={2} />
-            <span className={`font-bold text-sm ${isActive ? 'text-white' : ''}`}>{label}</span>
-        </div>
-        {badgeCount !== undefined && badgeCount > 0 && (
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isActive ? 'bg-white/20 text-white' : 'bg-red-100 text-red-600'}`}>
-                {badgeCount > 99 ? '99+' : badgeCount}
-            </span>
-        )}
-    </button>
-);
 
 const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
   products, onAddProduct, onUpdateProduct, onDeleteProduct, orders, users, customers, 
@@ -373,36 +370,17 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
-  // Close sidebar when view changes on mobile
-  useEffect(() => {
-      setSidebarOpen(false);
-  }, [view]);
+  useEffect(() => { setSidebarOpen(false); }, [view]);
 
-  const setView = (newView: AdminView) => {
-      if (onViewChange) {
-          onViewChange(newView);
-      }
-  };
+  const setView = (newView: AdminView) => { if (onViewChange) onViewChange(newView); };
 
-  // --- Header Config Logic ---
-  // We will utilize the main App header for the mobile toggle mainly, 
-  // but the dashboard has its own layout now.
   useEffect(() => {
-      setHeaderConfig({
-          title: 'لوحة التحكم',
-          showBack: false, // We use internal navigation
-      });
+      setHeaderConfig({ title: 'لوحة التحكم', showBack: false });
       return () => setHeaderConfig(null);
   }, [setHeaderConfig]);
 
-
-  const pendingWithdrawalsCount = useMemo(() => {
-    return withdrawalRequests.filter(r => r.status === 'pending').length;
-  }, [withdrawalRequests]);
-
-  const pendingOrdersCount = useMemo(() => {
-    return orders.filter(o => o.status === 'under_implementation').length;
-  }, [orders]);
+  const pendingWithdrawalsCount = useMemo(() => withdrawalRequests.filter(r => r.status === 'pending').length, [withdrawalRequests]);
+  const pendingOrdersCount = useMemo(() => orders.filter(o => o.status === 'under_implementation').length, [orders]);
 
   const allMenuItems = [
     { label: 'نظرة عامة', view: 'overview' as AdminView, icon: LayoutDashboardIcon },
@@ -414,15 +392,10 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
   ];
 
   const menuItems = useMemo(() => {
-      if (!currentUser?.permissions || currentUser.permissions.length === 0) {
-          return allMenuItems;
-      }
-      return allMenuItems.filter(item => 
-          currentUser.permissions?.includes(item.view) || item.view === 'overview' // Always show overview
-      );
+      if (!currentUser?.permissions || currentUser.permissions.length === 0) return allMenuItems;
+      return allMenuItems.filter(item => currentUser.permissions?.includes(item.view) || item.view === 'overview');
   }, [currentUser, allMenuItems]);
 
-  // Handle Internal Routing Logic for Detail Views
   const handleUserClick = (user: User) => { setSelectedUser(user); setView('userDetails'); };
   const handleBackToUsers = () => { setSelectedUser(null); setView('users'); };
 
@@ -431,7 +404,6 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
   const userWithdrawals = useMemo(() => selectedUser ? withdrawalRequests.filter(w => w.user_id === selectedUser.id) : [], [withdrawalRequests, selectedUser]);
 
   const renderContent = () => {
-    // Permission Check
     if (view !== 'dashboard' && view !== 'overview' && currentUser?.permissions && currentUser.permissions.length > 0 && !currentUser.permissions.includes(view)) {
         if (!(view === 'userDetails' && currentUser.permissions.includes('users'))) {
              return (
@@ -443,105 +415,52 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
              );
         }
     }
-
-    if (view === 'userDetails' && selectedUser) {
-        return <AdminUserDetailsPage user={selectedUser} userOrders={userOrders} userCustomers={userCustomers} userWithdrawals={userWithdrawals} onOrderClick={onAdminOrderClick} onBack={handleBackToUsers} addNotification={addNotification} setHeaderConfig={setHeaderConfig} />;
-    }
-
+    if (view === 'userDetails' && selectedUser) return <AdminUserDetailsPage user={selectedUser} userOrders={userOrders} userCustomers={userCustomers} userWithdrawals={userWithdrawals} onOrderClick={onAdminOrderClick} onBack={handleBackToUsers} addNotification={addNotification} setHeaderConfig={setHeaderConfig} />;
     switch (view) {
-        case 'dashboard': // Fallback alias
         case 'overview': return <AdminDashboardOverviewView users={users} orders={orders} />;
         case 'products': return <AdminProductsMainView products={products} onAddProduct={onAddProduct} onUpdateProduct={onUpdateProduct} onDeleteProduct={onDeleteProduct} orders={orders} categories={categories} setHeaderConfig={setHeaderConfig} onBackToAdminDashboardMenu={() => {}} />;
         case 'orders': return <AdminOrdersView orders={orders} onUpdateOrderStatus={onUpdateOrderStatus} onAdminOrderClick={onAdminOrderClick} addNotification={addNotification} setHeaderConfig={setHeaderConfig} onAdminUpdateOrder={onAdminUpdateOrder} />;
         case 'users': return <AdminUsersView users={users} onDeleteUser={onDeleteUser} onUserClick={handleUserClick} />;
         case 'withdrawals': return <AdminWithdrawalsView withdrawalRequests={withdrawalRequests} onProcessWithdrawal={onProcessWithdrawal} users={users} orders={orders} />;
         case 'settings': return <div className="p-6"><AdminSiteSettingsView faqItems={faqItems} siteSettings={siteSettings} onSetFaqItems={onSetFaqItems} onUpdateSiteSettings={onUpdateSiteSettings} categories={categories} onSetCategories={onSetCategories}/></div>;
-        default: return <div>جاري التحميل...</div>;
+        default: return <AdminDashboardOverviewView users={users} orders={orders} />;
     }
   };
 
-  const currentViewLabel = useMemo(() => {
-      return allMenuItems.find(i => i.view === view)?.label || 'لوحة التحكم';
-  }, [view]);
+  const currentViewLabel = useMemo(() => allMenuItems.find(i => i.view === view)?.label || 'لوحة التحكم', [view]);
 
   return (
     <div className="flex h-full bg-gray-50 dark:bg-slate-900 relative text-right font-cairo">
-        {/* Mobile Overlay */}
-        {isSidebarOpen && (
-            <div 
-                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden" 
-                onClick={() => setSidebarOpen(false)}
-            />
-        )}
-
-        {/* Sidebar Navigation */}
-        <aside 
-            className={`
-                fixed top-0 right-0 bottom-0 w-72 bg-white dark:bg-gray-800 z-50 flex flex-col border-l border-gray-100 dark:border-gray-700 shadow-2xl md:shadow-none transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:h-full
-                ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full'}
-            `}
-        >
-            {/* Sidebar Header */}
+        {isSidebarOpen && <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden" onClick={() => setSidebarOpen(false)} />}
+        <aside className={`fixed top-0 right-0 bottom-0 w-72 bg-white dark:bg-gray-800 z-50 flex flex-col border-l border-gray-100 dark:border-gray-700 shadow-2xl md:shadow-none transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:h-full ${isSidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}>
             <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
                         <BoxOpenIcon className="w-6 h-6" />
                     </div>
                     <div>
-                        <h1 className="font-extrabold text-xl text-gray-800 dark:text-white">إلك ستور</h1>
+                        <h1 className="font-extrabold text-xl text-gray-800 dark:text-white">مبيعاتنا</h1>
                         <p className="text-xs text-gray-500 dark:text-gray-400">لوحة التحكم</p>
                     </div>
                 </div>
-                <button onClick={() => setSidebarOpen(false)} className="md:hidden p-2 text-gray-400 hover:text-red-500">
-                    <XMarkIcon className="w-6 h-6" />
-                </button>
+                <button onClick={() => setSidebarOpen(false)} className="md:hidden p-2 text-gray-400 hover:text-red-500"><XMarkIcon className="w-6 h-6" /></button>
             </div>
-
-            {/* Menu Items */}
             <div className="flex-1 overflow-y-auto p-4 space-y-1">
-                {menuItems.map(item => (
-                    <SidebarItem 
-                        key={item.view}
-                        icon={item.icon}
-                        label={item.label}
-                        isActive={view === item.view}
-                        onClick={() => setView(item.view)}
-                        badgeCount={item.badgeCount}
-                    />
-                ))}
+                {menuItems.map(item => <SidebarItem key={item.view} icon={item.icon} label={item.label} isActive={view === item.view} onClick={() => setView(item.view)} badgeCount={item.badgeCount} />)}
             </div>
-
-            {/* User Profile / Logout */}
             <div className="p-4 border-t border-gray-100 dark:border-gray-700">
                 <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 mb-2">
-                    <div className="w-10 h-10 rounded-full bg-white dark:bg-gray-600 flex items-center justify-center text-gray-400 shadow-sm">
-                        <UsersGearIcon className="w-5 h-5" />
-                    </div>
-                    <div className="overflow-hidden">
-                        <p className="font-bold text-sm text-gray-800 dark:text-white truncate">{currentUser?.name}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{currentUser?.email}</p>
-                    </div>
+                    <div className="w-10 h-10 rounded-full bg-white dark:bg-gray-600 flex items-center justify-center text-gray-400 shadow-sm"><UsersGearIcon className="w-5 h-5" /></div>
+                    <div className="overflow-hidden"><p className="font-bold text-sm text-gray-800 dark:text-white truncate">{currentUser?.name}</p><p className="text-xs text-gray-500 dark:text-gray-400 truncate">{currentUser?.email}</p></div>
                 </div>
             </div>
         </aside>
-
-        {/* Main Content Area */}
         <main className="flex-1 flex flex-col h-full overflow-hidden relative">
-            {/* Mobile Header (Visible only on small screens) */}
             <div className="md:hidden flex items-center justify-between p-4 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
                 <h2 className="font-bold text-lg dark:text-gray-100">{currentViewLabel}</h2>
-                <button 
-                    onClick={() => setSidebarOpen(true)}
-                    className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300"
-                >
-                    <MenuIcon className="w-6 h-6" />
-                </button>
+                <button onClick={() => setSidebarOpen(true)} className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300"><MenuIcon className="w-6 h-6" /></button>
             </div>
-
-            {/* Content View */}
-            <div className="flex-1 overflow-y-auto no-scrollbar">
-                {renderContent()}
-            </div>
+            <div className="flex-1 overflow-y-auto no-scrollbar">{renderContent()}</div>
         </main>
     </div>
   );

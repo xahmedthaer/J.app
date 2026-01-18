@@ -43,6 +43,7 @@ const AccountPage: React.FC<AccountPageProps> = ({ onMenuClick, currentUser }) =
     return (
         <div className="p-4 space-y-4">
             <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm overflow-hidden divide-y divide-gray-200 dark:divide-gray-700 border border-gray-200 dark:border-gray-700">
+                {/* سيظهر هذا العنصر فقط إذا كان المستخدم Admin */}
                 {currentUser?.is_admin && (
                     <MenuItem icon={GaugeHighIcon} label="لوحة التحكم" onClick={() => onMenuClick('adminDashboard')} />
                 )}

@@ -76,6 +76,8 @@ export interface Order {
   time: string;
   created_at: string;
   admin_note?: string;
+  // FIX: Added service_fee field used in financial calculations and display
+  service_fee?: number;
 }
 
 export interface User {
@@ -119,6 +121,7 @@ export interface SupportInfo {
   hours: string;
 }
 
+// FIX: Added missing policy and fee description fields used in AccountSubPage component
 export interface SiteSettings {
   promoCard: {
     title: string;
@@ -127,6 +130,9 @@ export interface SiteSettings {
   };
   support_info: SupportInfo;
   banners: BannerItem[];
+  privacyPolicy: string;
+  termsAndConditions: string;
+  serviceFeesDescription: string;
 }
 
 export interface Category {

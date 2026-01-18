@@ -5,7 +5,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Product, CartItem, Order, User, Customer, WithdrawalRequest, FaqItem, SiteSettings, Category, Coupon, Supplier, SupplierWithdrawal, AppNotification, AdminView, Ticket } from './types';
 
 // Import mock data
-import { mockProducts, mockOrders, mockUsers, mockCustomers, mockWithdrawalRequests, mockFaqItems, mockSiteSettings, mockCategories, mockSystemNotifications } from './data/mockData';
+import { mockProducts, mockOrders, mockUsers, mockCustomers, mockWithdrawalRequests, mockFaqItems, mockSiteSettings, mockCategories, mockSystemNotifications, mockSuppliers, mockSupplierWithdrawals } from './data/mockData';
 
 // Import components (Updated Paths)
 import Header from './components/common/Header';
@@ -42,7 +42,8 @@ export interface HeaderConfig {
 }
 
 const App: React.FC = () => {
-    const [currentUser, setCurrentUser] = useState<User | null>(mockUsers[2]);
+    // تم تغيير المستخدم الافتراضي من mockUsers[2] إلى mockUsers[0] ليظهر زر لوحة التحكم
+    const [currentUser, setCurrentUser] = useState<User | null>(mockUsers[0]);
     const [products, setProducts] = useState<Product[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
     const [users, setUsers] = useState<User[]>([]);
@@ -624,10 +625,12 @@ const App: React.FC = () => {
                 onBack={handleBack}
                 cartItemCount={cartItems.length}
                 onCartClick={() => navigateTo('cart')}
-                onSupportClick={handleWhatsAppSupport} // Updated to WhatsApp handler
+                onSupportClick={handleWhatsAppSupport} 
                 onSavedProductsClick={() => handleAccountMenuClick('savedProducts')}
                 onClearCart={handleClearCart}
                 orderId={selectedOrder?.id}
+                isProductSaved={selectedProduct ? savedProductIds.includes(selectedProduct.id) : false}
+                onSaveToggle={selectedProduct ? () => handleSaveToggle(selectedProduct.id) : undefined}
                 accountSubPageTitle={
                     accountSubPageView === 'editProfile' ? 'تعديل الملف الشخصي' :
                     accountSubPageView === 'savedProducts' ? 'المنتجات المحفوظة' :

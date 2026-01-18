@@ -116,7 +116,6 @@ const EditProfilePage: React.FC<{
 }> = ({ currentUser, onUpdateUser, onDeleteUser, addNotification }) => {
     const [name, setName] = useState(currentUser?.name || '');
     const [phone, setPhone] = useState(currentUser?.phone || '');
-    const [storeName, setStoreName] = useState(currentUser?.store_name || '');
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const email = currentUser?.email || '';
@@ -134,7 +133,6 @@ const EditProfilePage: React.FC<{
         onUpdateUser({
             name,
             phone,
-            store_name: storeName,
         });
     };
 
@@ -169,11 +167,6 @@ const EditProfilePage: React.FC<{
                 <div>
                     <label className="text-sm font-semibold text-gray-600 dark:text-gray-400">الاسم</label>
                     <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full mt-1 p-3 border dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white" />
-                </div>
-
-                <div>
-                    <label className="text-sm font-semibold text-gray-600 dark:text-gray-400">اسم المتجر</label>
-                    <input type="text" value={storeName} onChange={(e) => setStoreName(e.target.value)} placeholder="اسم متجرك / صفحتك" className="w-full mt-1 p-3 border dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white" />
                 </div>
 
                  <div>

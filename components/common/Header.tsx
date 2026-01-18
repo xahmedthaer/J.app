@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { CartIcon, SupportIcon, SearchIcon, ChevronLeftIcon, XMarkIcon } from './icons';
+import { CartIcon, SupportIcon, SearchIcon, ChevronLeftIcon, XMarkIcon, BookmarkIcon } from './icons';
 import { Page, HeaderConfig } from '../../App';
 
 interface HeaderProps {
@@ -19,12 +19,14 @@ interface HeaderProps {
   headerConfig: HeaderConfig | null;
   searchQuery?: string;
   setSearchQuery?: (query: string) => void;
+  isProductSaved?: boolean;
+  onSaveToggle?: () => void;
 }
 
-const HeaderActionBtn: React.FC<{ onClick: () => void; children: React.ReactNode; badge?: number }> = ({ onClick, children, badge }) => (
+const HeaderActionBtn: React.FC<{ onClick: () => void; children: React.ReactNode; badge?: number; active?: boolean }> = ({ onClick, children, badge, active }) => (
     <button 
         onClick={onClick}
-        className="w-10 h-10 flex items-center justify-center bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-[12px] shadow-sm active:scale-90 transition-all relative"
+        className={`w-10 h-10 flex items-center justify-center bg-white dark:bg-gray-800 border rounded-[12px] shadow-sm active:scale-90 transition-all relative ${active ? 'border-primary text-primary' : 'border-gray-100 dark:border-gray-700 text-gray-500 dark:text-gray-400'}`}
     >
         {children}
         {badge !== undefined && badge > 0 && (
@@ -35,7 +37,7 @@ const HeaderActionBtn: React.FC<{ onClick: () => void; children: React.ReactNode
     </button>
 );
 
-const Header: React.FC<HeaderProps> = ({ page, onBack, cartItemCount, onCartClick, onSupportClick, accountSubPageTitle, orderId, checkoutPageTitle, categoryTitle, orderStatusTitle, headerConfig, searchQuery = '', setSearchQuery }) => {
+const Header: React.FC<HeaderProps> = ({ page, onBack, cartItemCount, onCartClick, onSupportClick, accountSubPageTitle, orderId, checkoutPageTitle, categoryTitle, orderStatusTitle, headerConfig, searchQuery = '', setSearchQuery, isProductSaved, onSaveToggle }) => {
   const [isSearching, setIsSearching] = useState(false);
 
   const getHeaderInfo = () => {
@@ -65,7 +67,7 @@ const Header: React.FC<HeaderProps> = ({ page, onBack, cartItemCount, onCartClic
       case 'accountSubPage':
         return { title: accountSubPageTitle || 'الإعدادات', subtitle: 'تعديل التفضيلات', showBack: true };
       default:
-        return { title: 'إلك', subtitle: 'تسوق بذكاء', showBack: false };
+        return { title: 'مبيعاتنا', subtitle: 'تسوق بذكاء', showBack: false };
     }
   }
 
@@ -100,36 +102,56 @@ const Header: React.FC<HeaderProps> = ({ page, onBack, cartItemCount, onCartClic
             </div>
         ) : (
             <>
-                {/* Left Side: Title and Subtitle */}
-                <div className="flex flex-col items-start text-left">
-                  <h1 className="text-[22px] font-black text-gray-900 dark:text-white leading-tight">
-                    {title}
-                  </h1>
-                  <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500">
-                    {subtitle}
-                  </p>
+                {/* Right Side (Start in RTL): Title and Subtitle Only */}
+                <div className="flex flex-col items-start text-right">
+                    <h1 className="text-[18px] font-black text-gray-900 dark:text-white leading-tight">
+                        {title}
+                    </h1>
+                    <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500">
+                        {subtitle}
+                    </p>
                 </div>
 
-                {/* Right Side: Square Action Buttons */}
+                {/* Left Side (End in RTL): Action Buttons (Including Back button now) */}
                 <div className="flex items-center gap-2">
-                    {showBack ? (
-                        <HeaderActionBtn onClick={onBack}>
-                            <ChevronLeftIcon className="w-5 h-5 text-gray-700 dark:text-gray-200" />
-                        </HeaderActionBtn>
-                    ) : (
+                    {page === 'productDetails' ? (
                         <>
-                            <HeaderActionBtn onClick={() => setIsSearching(true)}>
-                                <SearchIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                            </HeaderActionBtn>
-                            
+                            {onSaveToggle && (
+                                <HeaderActionBtn onClick={onSaveToggle} active={isProductSaved}>
+                                    <BookmarkIcon filled={isProductSaved} className="w-5 h-5" />
+                                </HeaderActionBtn>
+                            )}
                             <HeaderActionBtn onClick={onCartClick} badge={cartItemCount}>
-                                <CartIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                            </HeaderActionBtn>
-
-                            <HeaderActionBtn onClick={onSupportClick}>
-                                <SupportIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                                <CartIcon className="w-5 h-5" />
                             </HeaderActionBtn>
                         </>
+                    ) : (
+                        <>
+                            {!showBack && (
+                                <HeaderActionBtn onClick={() => setIsSearching(true)}>
+                                    <SearchIcon className="w-5 h-5" />
+                                </HeaderActionBtn>
+                            )}
+                            
+                            {!['cart', 'checkout', 'orderDetails', 'accountSubPage'].includes(page) && (
+                                <HeaderActionBtn onClick={onCartClick} badge={cartItemCount}>
+                                    <CartIcon className="w-5 h-5" />
+                                </HeaderActionBtn>
+                            )}
+
+                            {!showBack && (
+                                <HeaderActionBtn onClick={onSupportClick}>
+                                    <SupportIcon className="w-5 h-5" />
+                                </HeaderActionBtn>
+                            )}
+                        </>
+                    )}
+
+                    {/* Back Button positioned next to other icons on the left */}
+                    {showBack && (
+                        <HeaderActionBtn onClick={onBack}>
+                            <ChevronLeftIcon className="w-5 h-5" />
+                        </HeaderActionBtn>
                     )}
                 </div>
             </>
