@@ -51,13 +51,15 @@ export const syncUserProfile = async (user: any, additionalData?: { name?: strin
   const userRef = doc(db, 'users', user.uid);
   const userDoc = await getDoc(userRef);
   
+  const isBootstrapAdmin = user.email?.toLowerCase() === 'xahmedthaer@gmail.com';
+
   if (!userDoc.exists()) {
     const newUser: User = {
       id: user.uid,
       name: additionalData?.name || user.displayName || 'مستخدم جديد',
       email: user.email || '',
       phone: additionalData?.phone || '',
-      is_admin: user.email === 'Xahmedthaer@gmail.com', // Bootstrap admin
+      is_admin: isBootstrapAdmin, // Bootstrap admin
       registration_date: new Date().toISOString(),
     };
     try {
@@ -72,19 +74,34 @@ export const syncUserProfile = async (user: any, additionalData?: { name?: strin
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
     }
-  } else if (additionalData) {
-    // Optional update if data is provided
-    try {
-        await updateDoc(userRef, additionalData);
-        if (additionalData.phone) {
-            await setDoc(doc(db, 'phone_map', additionalData.phone), { email: (userDoc.data() as User).email, uid: user.uid });
+  } else {
+    const existingData = userDoc.data() as User;
+    
+    // Auto-repair admin status if email matches
+    if (isBootstrapAdmin && !existingData.is_admin) {
+        try {
+            await updateDoc(userRef, { is_admin: true });
+            existingData.is_admin = true;
+        } catch (error) {
+            console.error("Failed to repair admin status", error);
         }
-        return { ...(userDoc.data() as User), ...additionalData };
-    } catch (error) {
-        handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
     }
+
+    if (additionalData) {
+        // Optional update if data is provided
+        try {
+            await updateDoc(userRef, additionalData);
+            if (additionalData.phone) {
+                await setDoc(doc(db, 'phone_map', additionalData.phone), { email: existingData.email, uid: user.uid });
+            }
+            return { ...existingData, ...additionalData };
+        } catch (error) {
+            handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
+        }
+    }
+    return existingData;
   }
-  return userDoc.data() as User;
+  return null;
 };
 
 export const getUsers = async (): Promise<User[]> => {

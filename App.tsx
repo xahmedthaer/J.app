@@ -103,8 +103,10 @@ const App: React.FC = () => {
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // Ensure initial data exists in Firestore
-                import('./services/seedService').then(m => m.seedInitialData());
+                // Ensure initial data exists in Firestore - only bootstrap admin triggers it
+                if (user.email === 'Xahmedthaer@gmail.com') {
+                    import('./services/seedService').then(m => m.seedInitialData());
+                }
                 
                 const profile = await firebaseService.syncUserProfile(user);
                 setCurrentUser(profile);
