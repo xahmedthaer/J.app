@@ -14,37 +14,50 @@ async function startServer() {
 
   app.use(express.json());
 
-  // Load configs manually to avoid ESM import issues with JSON and enable dynamic updates
-  const rootDir = process.cwd();
-  const firebaseConfigPath = path.join(rootDir, 'firebase-applet-config.json');
-  const serviceAccountPath = path.join(rootDir, 'firebase-service-account.json');
+  // Try to find the files in common locations
+  const searchPaths = [
+    process.cwd(),
+    __dirname,
+    path.join(__dirname, '..'),
+    '/'
+  ];
   
+  let firebaseConfigPath = '';
+  let serviceAccountPath = '';
+  
+  for (const basePath of searchPaths) {
+    const cp = path.join(basePath, 'firebase-applet-config.json');
+    const sap = path.join(basePath, 'firebase-service-account.json');
+    
+    if (!firebaseConfigPath && fs.existsSync(cp)) firebaseConfigPath = cp;
+    if (!serviceAccountPath && fs.existsSync(sap)) serviceAccountPath = sap;
+  }
+
+  console.log("Found config path:", firebaseConfigPath || "NOT FOUND");
+  console.log("Found service account path:", serviceAccountPath || "NOT FOUND");
+
   let firebaseConfig: any = {};
-  try {
-    if (fs.existsSync(firebaseConfigPath)) {
+  if (firebaseConfigPath) {
+    try {
       firebaseConfig = JSON.parse(fs.readFileSync(firebaseConfigPath, 'utf8'));
-    } else {
-      console.error("firebase-applet-config.json NOT FOUND at", firebaseConfigPath);
+    } catch (err) {
+      console.error("Error reading firebase-applet-config.json:", err);
     }
-  } catch (err) {
-    console.error("Error reading firebase-applet-config.json:", err);
   }
 
   let serviceAccount: any = null;
-  try {
-    if (fs.existsSync(serviceAccountPath)) {
+  if (serviceAccountPath) {
+    try {
       serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
-      console.log("Service account file found and parsed.");
-    } else {
-      console.warn("firebase-service-account.json NOT FOUND at", serviceAccountPath);
+      console.log("Service account file loaded from:", serviceAccountPath);
+    } catch (err) {
+      console.error("Error reading firebase-service-account.json:", err);
+      serviceAccount = { error: `Read error: ${err instanceof Error ? err.message : String(err)}` };
     }
-  } catch (err) {
-    console.error("Error reading firebase-service-account.json:", err);
-    serviceAccount = { error: `Read error: ${err instanceof Error ? err.message : String(err)}` };
   }
 
   // Explicitly serve public assets (like firebase-messaging-sw.js)
-  app.use(express.static(path.join(rootDir, 'public')));
+  app.use(express.static(path.join(process.cwd(), 'public')));
 
   // Initialize Firebase Admin
   if (serviceAccount && !serviceAccount.error && admin.apps.length === 0) {
@@ -76,6 +89,7 @@ async function startServer() {
 
   // API Route for Broadcasting Notifications
   app.get('/api/admin/firebase-status', (req, res) => {
+    console.log("Status API hit. Admin apps:", admin.apps.length);
     res.json({
       initialized: admin.apps.length > 0,
       projectId: serviceAccount && !serviceAccount.error ? serviceAccount.project_id : null,
