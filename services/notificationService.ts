@@ -3,7 +3,7 @@ import { getMessagingInstance } from '../firebaseConfig';
 import { db } from '../firebaseConfig';
 import { doc, setDoc, arrayUnion, updateDoc } from 'firebase/firestore';
 
-const VAPID_KEY = "ODJyW4G0JEPXptxB1Ii06veELkvZsbk5SzTAh7kVg-g"; // User provided VAPID key
+const VAPID_KEY = "ODJyW4G0JEPXptxB1Ii06veELkvZsbk5SzTAh7kVg-g"; // Key provided by user: ODJyW4G0JEPXptxB1Ii06veELkvZsbk5SzTAh7kVg-g
 
 export const requestNotificationPermission = async (userId: string) => {
   if (typeof window === 'undefined') return null;
