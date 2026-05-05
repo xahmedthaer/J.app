@@ -10,7 +10,7 @@ const AdminBroadcastView: React.FC<AdminBroadcastViewProps> = ({ onSend }) => {
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [firebaseStatus, setFirebaseStatus] = useState<{ initialized: boolean, error: string | null } | null>(null);
+  const [firebaseStatus, setFirebaseStatus] = useState<{ initialized: boolean, projectId: string | null, configProjectId: string | null, error: string | null } | null>(null);
 
   React.useEffect(() => {
     fetch('/api/admin/firebase-status')
@@ -42,14 +42,23 @@ const AdminBroadcastView: React.FC<AdminBroadcastViewProps> = ({ onSend }) => {
           </div>
           <div>
             <h2 className="text-xl font-bold dark:text-white">إرسال إشعار عام</h2>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex flex-col gap-1 mt-1">
               {firebaseStatus?.initialized ? (
-                <span className="flex items-center gap-1 text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">
-                  <CheckCircleIcon className="w-3 h-3" />
-                  متصل بـ Firebase Admin
-                </span>
+                <div className="flex flex-col gap-1">
+                  <span className="flex items-center gap-1 text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold w-fit">
+                    <CheckCircleIcon className="w-3 h-3" />
+                    متصل بـ Firebase Admin
+                  </span>
+                  <div className="text-[10px] text-gray-500 flex gap-2">
+                    <span>Project (Service Account): <span className="font-mono text-blue-600">{firebaseStatus.projectId}</span></span>
+                    <span>Project (Config): <span className="font-mono text-blue-600">{firebaseStatus.configProjectId}</span></span>
+                  </div>
+                  {firebaseStatus.projectId !== firebaseStatus.configProjectId && (
+                    <span className="text-[10px] text-red-600 font-bold">⚠️ تنبيه: معرف المشروع غير متطابق! قد لا تعمل الإشعارات.</span>
+                  )}
+                </div>
               ) : (
-                <span className="flex items-center gap-1 text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold">
+                <span className="flex items-center gap-1 text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold w-fit">
                   <XMarkIcon className="w-3 h-3" />
                   غير متصل (يجب إضافة Service Account)
                 </span>

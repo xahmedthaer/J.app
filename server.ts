@@ -3,6 +3,8 @@ import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import admin from 'firebase-admin';
+import { getFirestore } from 'firebase-admin/firestore';
+import firebaseConfig from './firebase-applet-config.json' assert { type: 'json' };
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -13,13 +15,14 @@ async function startServer() {
   app.use(express.json());
 
   // Initialize Firebase Admin if Service Account is available
+  let serviceAccount: any = null;
   if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     try {
-      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+      serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount)
       });
-      console.log("Firebase Admin initialized successfully.");
+      console.log("Firebase Admin initialized successfully for project:", serviceAccount.project_id);
     } catch (error) {
       console.error("Failed to initialize Firebase Admin:", error);
     }
@@ -28,11 +31,11 @@ async function startServer() {
   }
 
   // API Route for Broadcasting Notifications
-  // API Route for Broadcasting Notifications
   app.get('/api/admin/firebase-status', (req, res) => {
     res.json({
       initialized: admin.apps.length > 0,
-      projectId: admin.apps.length > 0 ? admin.app().options.credential : null,
+      projectId: serviceAccount ? serviceAccount.project_id : null,
+      configProjectId: firebaseConfig.projectId,
       error: !process.env.FIREBASE_SERVICE_ACCOUNT ? "Missing FIREBASE_SERVICE_ACCOUNT env var" : null
     });
   });
@@ -51,8 +54,11 @@ async function startServer() {
     }
 
     try {
+      console.log(`Starting broadcast. Title: ${title}, Message: ${message}`);
+      
       // 1. Get all user tokens from Firestore
-      const db = admin.firestore();
+      console.log(`Fetching tokens from Firestore (DB: ${firebaseConfig.firestoreDatabaseId})...`);
+      const db = getFirestore(firebaseConfig.firestoreDatabaseId);
       const tokensSnap = await db.collection('fcm_tokens').get();
       
       const allTokens: string[] = [];
@@ -63,11 +69,14 @@ async function startServer() {
         }
       });
 
+      console.log(`Found ${allTokens.length} tokens in Firestore.`);
+
       if (allTokens.length === 0) {
         return res.json({ success: true, message: "No tokens found to send to." });
       }
 
       // 2. Send multi-cast message
+      console.log("Sending multicast message via FCM...");
       const response = await admin.messaging().sendEachForMulticast({
         tokens: allTokens,
         notification: {
