@@ -73,7 +73,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ addNotification }) => {
         <div className="h-full bg-white dark:bg-slate-900 flex flex-col justify-center items-center p-4">
             <div className="w-full max-w-sm mx-auto">
                 <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">مرحباً بك في إلك</h1>
+                    <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">مرحباً بك في لوكات بزنس</h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-2">{isLoginView ? 'سجل الدخول للمتابعة' : 'أنشئ حساباً جديداً'}</p>
                 </div>
 

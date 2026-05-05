@@ -1,7 +1,6 @@
-
 import React, { useState, useMemo } from 'react';
 import { Product } from '../../types';
-import { BookmarkIcon, PlusIcon, MinusIcon, ChevronDownIcon, XMarkIcon, CopyIcon, CartIcon, CubesStackIcon, CheckCircleIcon } from '../common/icons';
+import { BookmarkIcon, PlusIcon, MinusIcon, ChevronDownIcon, XMarkIcon, CopyIcon, CartIcon, CubesStackIcon, CheckCircleIcon, BoxOpenIcon } from '../common/icons';
 
 const ImageGalleryModal: React.FC<{
   images: string[];
@@ -157,7 +156,7 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product, onAddT
 
       {/* 1. Curved Image Header */}
       <div 
-        className="relative w-full aspect-square bg-gray-100 dark:bg-gray-800 rounded-b-[30px] overflow-hidden shadow-sm z-0 touch-pan-y"
+        className="relative w-full aspect-square bg-gray-100 dark:bg-gray-800 rounded-b-[40px] overflow-hidden shadow-sm z-0 touch-pan-y"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -171,146 +170,165 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product, onAddT
           
           {/* Bundle Badge Overlay */}
           {isBundle && (
-              <div className="absolute top-6 right-0 bg-red-600 text-white px-4 py-1.5 rounded-l-full font-black text-xs shadow-lg animate-pulse">
-                   بكج 3 ألوان إجباري 🔥
+              <div className="absolute top-6 right-0 bg-primary text-white px-5 py-2 rounded-l-full font-black text-xs shadow-lg animate-pulse">
+                   عرض البكج التوفيري 🔥
               </div>
           )}
 
           {/* Pagination Dots */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5 bg-black/20 backdrop-blur-md px-3 py-1.5 rounded-full">
               {product.image_urls.map((_, idx) => (
                   <button 
                     key={idx}
                     onClick={(e) => { e.stopPropagation(); setCurrentMainImageIndex(idx); }}
-                    className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${currentMainImageIndex === idx ? 'bg-yellow-400 w-3' : 'bg-white/80 hover:bg-white'}`}
+                    className={`w-2 h-2 rounded-full transition-all duration-300 ${currentMainImageIndex === idx ? 'bg-primary w-5' : 'bg-white/50'}`}
                   />
               ))}
           </div>
       </div>
 
-      <div className="px-4 pt-6">
-          {/* 2. Product Name Heading */}
-          <div className="text-right mb-4">
-              <h1 className="text-xl font-black text-gray-900 dark:text-white leading-tight">
+      <div className="px-5 pt-6">
+          {/* 2. Product Name & Title Area */}
+          <div className="text-right mb-6">
+              <h1 className="text-2xl font-black text-gray-900 dark:text-white leading-tight">
                   {product.name}
-                  {isBundle && <span className="block text-sm text-red-500 mt-1">(هذا المنتج يباع كـ بكج 3 سيريات ألوان مختلفة)</span>}
               </h1>
+              <div className="flex items-center gap-2 justify-end mt-2">
+                 <span className="text-xs font-bold text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">{product.category}</span>
+                 <span className="text-xs font-bold text-primary bg-primary/10 px-3 py-1 rounded-full">{isBundle ? 'نظام بكجات' : 'نظام سيريات'}</span>
+              </div>
           </div>
 
-          {/* Wholesale Price & Stock */}
-          <div className="flex items-center justify-between mb-4">
-              <div className="flex flex-col">
-                  <span className="text-xs text-gray-500 dark:text-gray-400 font-bold mb-1 text-right">
-                      {isBundle ? 'سعر البكج (جملة)' : 'سعر السيرية (جملة)'}
-                  </span>
-                  <p className="text-2xl font-black text-primary dark:text-primary-light leading-none">
-                      {displayPrice.toLocaleString()} <span className="text-xs font-bold text-gray-500 dark:text-gray-400">د.ع</span>
+          {/* Wholesale Price & Stock Stats */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-3xl border border-gray-100 dark:border-gray-700 flex flex-col items-center">
+                  <span className="text-[10px] text-gray-400 font-bold mb-1">السعر للمسوق (جملة)</span>
+                  <p className="text-xl font-black text-primary dark:text-primary-light">
+                      {displayPrice.toLocaleString()} <span className="text-[10px] font-bold">د.ع</span>
                   </p>
               </div>
               
-              <div className="flex flex-col items-end">
-                  <span className="text-xs text-gray-500 dark:text-gray-400 font-bold mb-1">المخزون المتاح</span>
-                  <p className="text-base font-black text-gray-800 dark:text-gray-200 leading-none dir-ltr">
-                      {product.stock} {isBundle ? 'بكج' : 'سيرية'}
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-3xl border border-gray-100 dark:border-gray-700 flex flex-col items-center">
+                  <span className="text-[10px] text-gray-400 font-bold mb-1">المخزون المتوفر</span>
+                  <p className="text-xl font-black text-gray-800 dark:text-gray-200 dir-ltr">
+                      {product.stock} <span className="text-[10px] font-bold opacity-60">{isBundle ? 'بكج' : 'سيرية'}</span>
                   </p>
               </div>
           </div>
 
-          {/* Divider */}
-          <div className="border-b border-gray-100 dark:border-gray-800 mb-4"></div>
-
-          {/* 3. Bundle Content Info Box */}
-          {isBundle && (
-              <div className="bg-orange-50 dark:bg-orange-900/10 border-2 border-orange-200 dark:border-orange-800/40 rounded-2xl p-4 mb-6 shadow-sm">
-                  <h3 className="text-sm font-black text-orange-800 dark:text-orange-300 flex items-center gap-2 mb-3">
-                      <i className="fa-solid fa-layer-group"></i>
-                      مكونات هذا البكج:
-                  </h3>
-                  <div className="grid grid-cols-1 gap-2">
-                      <div className="flex items-center gap-2 text-xs font-bold text-gray-700 dark:text-gray-300 bg-white/60 dark:bg-gray-800/60 p-2 rounded-xl">
-                          <CheckCircleIcon className="w-4 h-4 text-green-500" />
-                          <span>سيرية كاملة - لون أسود</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs font-bold text-gray-700 dark:text-gray-300 bg-white/60 dark:bg-gray-800/60 p-2 rounded-xl">
-                          <CheckCircleIcon className="w-4 h-4 text-green-500" />
-                          <span>سيرية كاملة - لون أبيض</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs font-bold text-gray-700 dark:text-gray-300 bg-white/60 dark:bg-gray-800/60 p-2 rounded-xl">
-                          <CheckCircleIcon className="w-4 h-4 text-green-500" />
-                          <span>سيرية كاملة - لون نيلي</span>
-                      </div>
+          {/* 3. Unified Preparation Details Card (The Smart Card) */}
+          <div className="bg-slate-50 dark:bg-gray-800/80 rounded-[32px] border-2 border-slate-100 dark:border-gray-700 p-6 mb-8 shadow-sm relative overflow-hidden">
+              {/* Card Header */}
+              <div className="flex items-center gap-3 mb-6 border-b border-slate-200 dark:border-gray-700 pb-4">
+                  <div className="w-12 h-12 bg-white dark:bg-gray-700 rounded-2xl flex items-center justify-center shadow-sm text-primary">
+                      <BoxOpenIcon className="w-6 h-6" />
+                  </div>
+                  <div className="text-right">
+                      <h3 className="text-base font-black text-gray-900 dark:text-white">تفاصيل المحتوى والتجهيز</h3>
+                      <p className="text-[10px] text-gray-400 font-bold">ما الذي سيصل للزبون بالضبط؟</p>
                   </div>
               </div>
-          )}
 
-          {/* 4. Streamlined Size & Quantity Row */}
-          <div id="size-selection-section" className="mb-6">
-              <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 p-4 rounded-2xl mb-4 text-center">
-                  <p className="text-sm font-black text-blue-800 dark:text-blue-300">محتويات السيرية الواحدة</p>
-                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1.5 font-bold">{product.series_sizes}</p>
-                  <p className="text-[10px] text-blue-400 dark:text-blue-500 mt-2 font-bold">إجمالي عدد القطع في كل لون: {product.series_count}</p>
+              {/* Card Content - Adaptive */}
+              <div className="space-y-5">
+                  {isBundle ? (
+                      /* Bundle Specific Layout */
+                      <div className="space-y-4">
+                          <div className="flex flex-col gap-3">
+                              <p className="text-xs font-black text-gray-500 text-right">يتكون هذا البكج من {bundleCount} سيريات بالألوان التالية:</p>
+                              <div className="grid grid-cols-1 gap-2">
+                                  {['أسود ملكي', 'أبيض ناصع', 'نيلي غامق'].map((color, idx) => (
+                                      <div key={idx} className="flex items-center justify-between bg-white dark:bg-gray-700 p-3 rounded-2xl border border-slate-100 dark:border-gray-600">
+                                          <CheckCircleIcon className="w-4 h-4 text-green-500" />
+                                          <span className="text-sm font-bold text-gray-700 dark:text-gray-200">{color}</span>
+                                      </div>
+                                  ))}
+                              </div>
+                          </div>
+                          <div className="pt-4 border-t border-slate-100 dark:border-gray-700">
+                              <p className="text-[10px] font-black text-gray-400 text-right mb-2">محتويات كل سيرية داخل البكج:</p>
+                              <div className="flex items-center justify-between">
+                                  <span className="text-xs font-black text-gray-700 dark:text-gray-300">القياسات المتوفرة</span>
+                                  <span className="text-xs font-bold text-primary">{product.series_sizes}</span>
+                              </div>
+                              <div className="flex items-center justify-between mt-2">
+                                  <span className="text-xs font-black text-gray-700 dark:text-gray-300">عدد القطع لكل سيرية</span>
+                                  <span className="text-xs font-bold text-gray-600 dark:text-gray-400">{product.series_count} قطع</span>
+                              </div>
+                          </div>
+                      </div>
+                  ) : (
+                      /* Standard Series Specific Layout */
+                      <div className="space-y-4">
+                          <div className="flex items-center justify-between bg-white dark:bg-gray-700 p-4 rounded-2xl border border-slate-100 dark:border-gray-600">
+                              <div className="text-right">
+                                  <p className="text-[10px] text-gray-400 font-bold mb-1">القياسات المتوفرة بالسيرية</p>
+                                  <p className="text-sm font-black text-primary">{product.series_sizes}</p>
+                              </div>
+                              <div className="w-10 h-10 bg-primary/5 rounded-xl flex items-center justify-center text-primary">
+                                  <CubesStackIcon className="w-5 h-5" />
+                              </div>
+                          </div>
+                          <div className="flex items-center justify-between bg-white dark:bg-gray-700 p-4 rounded-2xl border border-slate-100 dark:border-gray-600">
+                              <div className="text-right">
+                                  <p className="text-[10px] text-gray-400 font-bold mb-1">إجمالي عدد القطع بالسيرية</p>
+                                  <p className="text-sm font-black text-gray-800 dark:text-white">{product.series_count} قطع كاملة</p>
+                              </div>
+                              <div className="w-10 h-10 bg-slate-50 dark:bg-gray-800 rounded-xl flex items-center justify-center text-slate-400">
+                                  <i className="fa-solid fa-layer-group text-sm"></i>
+                              </div>
+                          </div>
+                      </div>
+                  )}
               </div>
 
-              {/* Quantity Selector */}
-              <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-700">
-                  <span className="font-black text-gray-700 dark:text-gray-300 text-sm">
-                      {isBundle ? 'عدد البكجات المطلوبة' : 'الكمية (بالسيرية)'}
-                  </span>
-                  
-                  <div className="flex items-center gap-4 h-full">
-                       <button 
-                          onClick={() => handleQuantityChange(1)}
-                          className="w-10 h-10 rounded-xl bg-white dark:bg-gray-700 text-primary shadow-sm flex items-center justify-center active:scale-95 transition-all border border-gray-100 dark:border-gray-600 hover:border-primary/30"
-                      >
-                          <PlusIcon className="w-5 h-5" />
-                      </button>
-                      <span className="font-black text-xl text-gray-800 dark:text-white w-8 text-center">{quantity}</span>
-                      <button 
-                          onClick={() => handleQuantityChange(-1)}
-                          className="w-10 h-10 rounded-xl bg-white dark:bg-gray-700 text-gray-500 shadow-sm flex items-center justify-center active:scale-95 transition-all border border-gray-100 dark:border-gray-600 hover:bg-gray-50"
-                      >
-                          <MinusIcon className="w-5 h-5" />
-                      </button>
+              {/* Integrated Quantity Controls */}
+              <div className="mt-8 pt-6 border-t-2 border-dashed border-slate-200 dark:border-gray-700">
+                  <div className="flex justify-between items-center">
+                       <div className="flex items-center gap-3">
+                           <button onClick={() => handleQuantityChange(1)} className="w-11 h-11 rounded-2xl bg-white dark:bg-gray-700 text-primary shadow-sm flex items-center justify-center active:scale-90 transition-all border border-slate-100 dark:border-gray-600"><PlusIcon className="w-5 h-5" /></button>
+                           <span className="font-black text-xl text-gray-900 dark:text-white w-8 text-center">{quantity}</span>
+                           <button onClick={() => handleQuantityChange(-1)} className="w-11 h-11 rounded-2xl bg-white dark:bg-gray-700 text-gray-400 shadow-sm flex items-center justify-center active:scale-90 transition-all border border-slate-100 dark:border-gray-600"><MinusIcon className="w-5 h-5" /></button>
+                       </div>
+                       <div className="text-right">
+                           <span className="text-xs font-black text-gray-400 block mb-1">{isBundle ? 'عدد البكجات' : 'عدد السيريات'}</span>
+                           <span className="text-sm font-black text-gray-800 dark:text-white">حدد الكمية المطلوبة</span>
+                       </div>
                   </div>
               </div>
           </div>
 
-          {/* Straight Line Separator */}
-          <div className="border-t border-gray-200 dark:border-gray-700 mb-6"></div>
-
-          {/* 5. Promo Content Section */}
-          <div className="pb-8">
+          {/* 4. Marketing Copy Section */}
+          <div className="pb-10">
               {product.telegramUrl && (
-                  <div className="mb-6 w-full">
-                      <a 
-                          href={product.telegramUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="w-full flex items-center justify-center gap-3 bg-[#229ED9]/10 text-[#229ED9] hover:bg-[#229ED9] hover:text-white py-3 rounded-2xl transition-all duration-300 text-sm font-black border border-[#229ED9]/20 shadow-sm"
-                      >
-                          <i className="fa-brands fa-telegram text-xl"></i>
-                          <span>حمل صور او فيديو المنتج من تليكرام</span>
-                      </a>
-                  </div>
+                  <a 
+                    href={product.telegramUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="w-full flex items-center justify-center gap-3 bg-[#229ED9]/10 text-[#229ED9] hover:bg-[#229ED9] hover:text-white py-4 rounded-[24px] transition-all duration-300 text-sm font-black border border-[#229ED9]/20 shadow-sm mb-6"
+                  >
+                    <i className="fa-brands fa-telegram text-xl"></i>
+                    <span>حمل صور او فيديو المنتج من تليكرام</span>
+                  </a>
               )}
 
-              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm animate-fade-in">
-                  <div className="flex items-center justify-between p-3 border-b border-gray-100 dark:border-gray-700 bg-gray-100/50 dark:bg-gray-700/30">
+              <div className="bg-white dark:bg-gray-800 rounded-[32px] border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm animate-fade-in">
+                  <div className="flex items-center justify-between p-4 border-b border-gray-50 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/30">
                       <div className="flex items-center gap-2">
-                         <div className="w-6 h-6 bg-primary/10 rounded-md flex items-center justify-center">
-                            <i className="fa-solid fa-bullhorn text-[10px] text-primary"></i>
+                         <div className="w-8 h-8 bg-primary/10 rounded-xl flex items-center justify-center">
+                            <i className="fa-solid fa-bullhorn text-[12px] text-primary"></i>
                          </div>
-                         <h3 className="font-black text-gray-800 dark:text-gray-200 text-xs">وصف ترويجي للنشر</h3>
+                         <h3 className="font-black text-gray-800 dark:text-gray-200 text-xs">الوصف التسويقي الجاهز</h3>
                       </div>
                       <button 
                         onClick={() => handleCopyText(marketingText)}
-                        className="flex items-center gap-2 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-primary dark:text-primary-light border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-2 transition-all shadow-sm active:scale-95 text-xs font-black"
+                        className="flex items-center gap-2 bg-white dark:bg-gray-700 text-primary dark:text-primary-light border border-slate-200 dark:border-gray-600 rounded-xl px-4 py-2 transition-all shadow-sm active:scale-95 text-[10px] font-black"
                       >
-                          <CopyIcon className="w-3.5 h-3.5" />
-                          <span>نسخ النص</span>
+                          <CopyIcon className="w-3 h-3" />
+                          <span>نسخ الوصف</span>
                       </button>
                   </div>
-                  <div className="p-5">
+                  <div className="p-6">
                       <div className="text-right text-gray-800 dark:text-gray-200 text-base font-bold leading-loose whitespace-pre-wrap">
                           {marketingText}
                       </div>
@@ -319,16 +337,16 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product, onAddT
           </div>
       </div>
 
-      {/* 6. Fixed Bottom Button */}
-      <div className="fixed bottom-0 left-0 right-0 w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md px-4 py-4 shadow-[0_-4px_30px_rgba(0,0,0,0.08)] z-10 border-t border-gray-100 dark:border-gray-800">
+      {/* 5. Sticky CTA Bottom Bar */}
+      <div className="fixed bottom-0 left-0 right-0 w-full bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl px-6 py-5 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-10 border-t border-gray-100 dark:border-gray-800">
           <button 
             onClick={handleAddToCartClick}
             disabled={(product.stock === 0)}
-            className="w-full bg-primary text-white hover:bg-primary/90 active:scale-95 transition-all duration-300 font-black text-base py-3.5 rounded-2xl shadow-lg shadow-primary/25 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+            className="w-full bg-primary text-white active:scale-95 transition-all duration-500 font-black text-base py-4 rounded-[24px] shadow-xl shadow-primary/30 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-3"
           >
-              <CartIcon className="w-5 h-5" />
+              <CartIcon className="w-6 h-6" />
               <span>
-                  {product.stock === 0 ? 'نفذت الكمية تماماً' : isBundle ? 'أضف البكج الكامل للسلة الآن' : 'أضف السيرية إلى السلة الآن'}
+                  {product.stock === 0 ? 'للأسف، نفذت الكمية' : `أضف للسلة • ${displayPrice.toLocaleString()} د.ع`}
               </span>
           </button>
       </div>

@@ -1,7 +1,6 @@
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Product, BannerItem, Category, SiteSettings } from '../../types';
-import { XMarkIcon, PlusIcon, MinusIcon, CartIcon, CheckCircleIcon, RocketIcon } from '../common/icons';
+import { XMarkIcon, PlusIcon, MinusIcon, CartIcon, CheckCircleIcon, RocketIcon, BoxOpenIcon, CubesStackIcon } from '../common/icons';
 import ProductGrid from './ProductGrid';
 import HorizontalProductScroller from './HorizontalProductScroller';
 
@@ -14,9 +13,10 @@ interface SizeSelectionModalProps {
 const SizeSelectionModal: React.FC<SizeSelectionModalProps> = ({ product, onClose, onAddToCart }) => {
     const [quantity, setQuantity] = useState(1);
     const currentStock = product.stock;
+    const isBundle = product.name.includes("بكج") || product.tags?.includes("bundle") || false;
 
     const handleAddToCart = () => {
-        const sizeName = `سيرية (${product.series_count} قطع)`;
+        const sizeName = isBundle ? `بكج ألوان مختلطة (3 سيريات)` : `سيرية (${product.series_count} قطع)`;
         for(let i=0; i<quantity; i++) {
             onAddToCart(product, sizeName);
         }
@@ -33,59 +33,90 @@ const SizeSelectionModal: React.FC<SizeSelectionModalProps> = ({ product, onClos
     return (
         <div className="fixed inset-0 z-[100] flex justify-center items-end sm:items-center" role="dialog" aria-modal="true">
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
-            <div className="bg-white dark:bg-gray-900 w-full max-w-lg rounded-t-[35px] sm:rounded-3xl shadow-2xl transform transition-all animate-slide-up relative overflow-hidden flex flex-col max-h-[85vh]" onClick={(e) => e.stopPropagation()}>
-                <div className="w-full flex justify-center pt-3 pb-1" onClick={onClose}>
-                    <div className="w-14 h-1.5 bg-gray-300 dark:bg-gray-700 rounded-full cursor-pointer opacity-80"></div>
+            <div className="bg-white dark:bg-gray-900 w-full max-w-lg rounded-t-[40px] sm:rounded-[40px] shadow-2xl transform transition-all animate-slide-up relative overflow-hidden flex flex-col max-h-[85vh]" onClick={(e) => e.stopPropagation()}>
+                <div className="w-full flex justify-center pt-4 pb-1" onClick={onClose}>
+                    <div className="w-16 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full cursor-pointer"></div>
                 </div>
-                <button onClick={onClose} className="absolute top-4 left-4 p-2 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-full hover:bg-red-50 hover:text-red-500 transition-colors z-10">
+                <button onClick={onClose} className="absolute top-6 left-6 p-2 bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-red-500 transition-colors z-10 rounded-full shadow-sm">
                     <XMarkIcon className="w-5 h-5" />
                 </button>
-                <div className="p-6 pt-2 flex flex-col gap-6 overflow-y-auto">
-                    <div className="flex gap-4 items-start text-right relative">
-                        <div className="w-24 h-24 flex-shrink-0 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-2">
+                <div className="p-8 pt-4 flex flex-col gap-6 overflow-y-auto">
+                    {/* Header Info */}
+                    <div className="flex gap-5 items-start text-right">
+                        <div className="w-24 h-24 flex-shrink-0 bg-slate-50 dark:bg-gray-800 rounded-3xl border border-slate-100 dark:border-gray-700 p-2 shadow-sm">
                             <img src={product.image_urls[0]} alt={product.name} className="w-full h-full object-contain" />
                         </div>
-                        <div className="flex-grow pt-1">
-                             <h3 className="font-bold text-gray-900 dark:text-white text-lg leading-tight line-clamp-2 pl-8">{product.name}</h3>
+                        <div className="flex-grow pt-2">
+                             <h3 className="font-black text-gray-900 dark:text-white text-lg leading-snug line-clamp-2">{product.name}</h3>
                             <div className="mt-2 flex items-center justify-end gap-2">
-                                <span className="text-sm text-gray-500 dark:text-gray-400">سعر السيرية</span>
-                                <div className="text-primary dark:text-primary-light font-extrabold text-xl dir-ltr">
-                                    {product.price.toLocaleString()} <span className="text-xs font-normal">د.ع</span>
+                                <span className="text-[10px] text-gray-400 font-bold">سعر الجملة:</span>
+                                <div className="text-primary dark:text-primary-light font-black text-xl dir-ltr">
+                                    {product.price.toLocaleString()} <span className="text-[10px]">د.ع</span>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div className="h-px bg-gray-100 dark:bg-gray-800 w-full"></div>
-                    <div>
-                        <div className="flex justify-between items-center mb-3">
-                            <h4 className="font-bold text-gray-800 dark:text-gray-200 text-sm">تفاصيل السيرية</h4>
-                            <span className="text-xs text-primary bg-primary/10 px-2 py-1 rounded-md font-bold">متبقي: {currentStock} سيرية</span>
+
+                    <div className="h-px bg-slate-100 dark:bg-gray-800 w-full"></div>
+
+                    {/* Preparation Details Block */}
+                    <div className="bg-slate-50 dark:bg-gray-800/60 p-5 rounded-[32px] border border-slate-100 dark:border-gray-700">
+                        <div className="flex items-center gap-2 mb-4 justify-end">
+                            <h4 className="font-black text-gray-800 dark:text-gray-200 text-xs">تفاصيل المحتوى</h4>
+                            <BoxOpenIcon className="w-4 h-4 text-primary" />
                         </div>
-                        <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 p-4 rounded-2xl text-center">
-                            <p className="text-xs text-blue-800 dark:text-blue-300 font-bold mb-2">محتويات السيرية:</p>
-                            <p className="text-sm text-blue-600 dark:text-blue-400">{product.series_sizes}</p>
-                            <p className="text-[10px] text-blue-500 dark:text-blue-500 mt-2">إجمالي العدد: {product.series_count} قطعة</p>
-                        </div>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-2xl flex flex-col gap-4">
-                        <div className="flex items-center justify-between">
-                            <span className="font-bold text-gray-700 dark:text-gray-300 text-sm">عدد السيريات</span>
-                            <div className={`flex items-center bg-white dark:bg-gray-700 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600 p-1 h-10 ${currentStock === 0 ? 'opacity-50 pointer-events-none' : ''}`}>
-                                <button onClick={() => handleQuantityChange(1)} disabled={quantity >= currentStock} className="w-8 h-full flex items-center justify-center text-primary hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"><PlusIcon className="w-4 h-4" /></button>
-                                <div className="w-8 text-center font-bold text-gray-800 dark:text-white text-lg">{quantity}</div>
-                                <button onClick={() => handleQuantityChange(-1)} disabled={quantity <= 1} className="w-8 h-full flex items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"><MinusIcon className="w-4 h-4" /></button>
+
+                        {isBundle ? (
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between bg-white dark:bg-gray-700 p-3 rounded-2xl shadow-sm border border-slate-50 dark:border-gray-600">
+                                    <span className="text-xs font-bold text-green-600">3 سيريات</span>
+                                    <span className="text-xs font-black text-gray-600 dark:text-gray-300">ألوان مختلفة</span>
+                                </div>
+                                <div className="flex items-center justify-between px-1">
+                                    <span className="text-[10px] font-bold text-gray-400">القياسات</span>
+                                    <span className="text-[10px] font-black text-gray-700 dark:text-gray-200">{product.series_sizes}</span>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between bg-white dark:bg-gray-700 p-3 rounded-2xl shadow-sm border border-slate-50 dark:border-gray-600">
+                                    <span className="text-xs font-black text-primary">{product.series_count} قطع</span>
+                                    <span className="text-xs font-black text-gray-600 dark:text-gray-300">محتويات السيرية</span>
+                                </div>
+                                <div className="flex items-center justify-between px-1">
+                                    <span className="text-[10px] font-bold text-gray-400">القياسات</span>
+                                    <span className="text-[10px] font-black text-gray-700 dark:text-gray-200">{product.series_sizes}</span>
+                                </div>
+                            </div>
+                        )}
+                        
+                        <div className="mt-4 pt-4 border-t border-slate-200 dark:border-gray-700 flex justify-between items-center">
+                            <div className="flex items-center bg-white dark:bg-gray-700 rounded-2xl shadow-sm border border-slate-100 dark:border-gray-600 p-1.5">
+                                <button onClick={() => handleQuantityChange(1)} className="w-9 h-9 rounded-xl flex items-center justify-center text-primary active:scale-90 transition-all"><PlusIcon className="w-4 h-4" /></button>
+                                <div className="w-8 text-center font-black text-gray-800 dark:text-white text-lg">{quantity}</div>
+                                <button onClick={() => handleQuantityChange(-1)} className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-400 active:scale-90 transition-all"><MinusIcon className="w-4 h-4" /></button>
+                            </div>
+                            <div className="text-right">
+                                <span className="text-[10px] font-black text-gray-400 block">{isBundle ? 'عدد البكجات' : 'عدد السيريات'}</span>
+                                <span className="text-xs font-black text-gray-700 dark:text-gray-200">الكمية المطلوبة</span>
                             </div>
                         </div>
-                        <button onClick={handleAddToCart} disabled={currentStock === 0} className="w-full h-14 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-3 disabled:bg-gray-300 active:scale-95 transition-all">
-                            <CartIcon className="w-5 h-5" />
-                            <span>{currentStock > 0 ? 'أضف للسلة' : 'نفذت الكمية'}</span>
-                        </button>
                     </div>
+
+                    <button 
+                        onClick={handleAddToCart} 
+                        disabled={currentStock === 0} 
+                        className="w-full h-16 bg-primary text-white font-black rounded-[24px] shadow-xl shadow-primary/30 flex items-center justify-center gap-3 disabled:bg-gray-300 active:scale-95 transition-all mb-4"
+                    >
+                        <CartIcon className="w-6 h-6" />
+                        <span>{currentStock > 0 ? (isBundle ? 'أضف البكج للسلة' : 'أضف السيرية للسلة') : 'نفذت الكمية'}</span>
+                    </button>
                 </div>
             </div>
         </div>
     );
 };
+
 
 interface ProductsPageProps {
   products: Product[];
@@ -129,14 +160,14 @@ const ProductsPage: React.FC<ProductsPageProps> = ({
         {!selectedCategory && !externalSearchQuery.trim() ? (
             <>
                 {/* Promo Card */}
-                <div onClick={onExploreClick} className="mx-4 mt-2 bg-gradient-to-l from-primary/10 to-orange-50 dark:from-primary/20 dark:to-transparent border border-primary/10 rounded-[28px] p-5 flex items-center justify-between cursor-pointer active:scale-98 transition-all">
+                <div onClick={onExploreClick} className="mx-4 mt-2 bg-gradient-to-l from-primary/10 to-orange-50 dark:from-primary/20 dark:to-transparent border border-primary/10 rounded-[32px] p-6 flex items-center justify-between cursor-pointer active:scale-98 transition-all shadow-sm">
                     <div className="flex flex-col items-start text-right">
-                        <h2 className="font-black text-lg text-gray-900 dark:text-white mb-1">{promoSettings.title}</h2>
+                        <h2 className="font-black text-xl text-gray-900 dark:text-white mb-1">{promoSettings.title}</h2>
                         <p className="text-gray-500 dark:text-gray-400 text-xs font-bold leading-relaxed max-w-[180px]">{promoSettings.subtitle}</p>
-                        <button className="mt-4 bg-primary text-white px-6 py-2 rounded-xl text-xs font-black shadow-lg shadow-primary/30">{promoSettings.buttonText}</button>
+                        <button className="mt-4 bg-primary text-white px-8 py-2.5 rounded-2xl text-xs font-black shadow-lg shadow-primary/30">تصفح الآن</button>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-inner border border-primary/5">
-                        <RocketIcon className="w-10 h-10 text-primary animate-pulse" />
+                    <div className="bg-white dark:bg-gray-800 p-5 rounded-3xl shadow-inner border border-primary/5">
+                        <RocketIcon className="w-12 h-12 text-primary animate-pulse" />
                     </div>
                 </div>
 
@@ -144,8 +175,8 @@ const ProductsPage: React.FC<ProductsPageProps> = ({
                 <div className="mt-6">
                     <div className="flex gap-3 overflow-x-auto px-4 pb-4 no-scrollbar">
                         {categories.filter(c => !c.parentId).map(cat => (
-                            <button key={cat.id} onClick={() => onCategorySelect(cat)} className="flex-shrink-0 flex items-center gap-3 px-5 py-3 rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 shadow-sm hover:border-primary active:scale-95 transition-all">
-                                <span className="font-bold text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap">{cat.name}</span>
+                            <button key={cat.id} onClick={() => onCategorySelect(cat)} className="flex-shrink-0 flex items-center gap-3 px-6 py-4 rounded-[24px] border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 shadow-sm hover:border-primary active:scale-95 transition-all">
+                                <span className="font-black text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap">{cat.name}</span>
                             </button>
                         ))}
                     </div>

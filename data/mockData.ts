@@ -32,7 +32,7 @@ export const mockProducts: Product[] = [
     stock: 12,
     category: 'ملابس',
     tags: ['bundle', 'bestseller'],
-    telegramUrl: 'https://t.me/elak_store/bundle1',
+    telegramUrl: 'https://t.me/lookat_store/bundle1',
     created_at: new Date().toISOString()
   },
   {
@@ -55,7 +55,7 @@ export const mockProducts: Product[] = [
 ];
 
 export const mockUsers: User[] = [
-  { id: 'user-1', name: 'مدير النظام', email: 'admin@elak.iq', is_admin: true, permissions: ['overview', 'products', 'orders', 'users', 'withdrawals', 'settings', 'tickets', 'notifications', 'suppliers', 'coupons', 'employees'] },
+  { id: 'user-1', name: 'مدير النظام', email: 'admin@lookat.iq', is_admin: true, permissions: ['overview', 'products', 'orders', 'users', 'withdrawals', 'settings', 'tickets', 'notifications', 'suppliers', 'coupons', 'employees'] },
   { id: 'user-2', name: 'أحمد محمود', email: 'ahmed@example.com', is_admin: false, phone: '07701112223' },
   { id: 'user-3', name: 'سارة جاسم', email: 'marketer@example.com', is_admin: false, store_name: 'سارة شوب', phone: '07804445556' }
 ];
@@ -91,11 +91,11 @@ export const mockFaqItems: FaqItem[] = [
 
 export const mockSiteSettings: SiteSettings = {
   promoCard: {
-    title: 'أهلاً بك في مبيعاتنا',
+    title: 'أهلاً بك في لوكات بزنس',
     subtitle: 'ابدأ تجارتك اليوم وحقق أرباحاً إضافية بكل سهولة من منزلك.',
     buttonText: 'تصفح المنتجات'
   },
-  support_info: { email: 'support@elak.iq', phone: '0774402688', hours: '9 صباحاً - 9 مساءً' },
+  support_info: { email: 'support@lookat.iq', phone: '0774402688', hours: '9 صباحاً - 9 مساءً' },
   banners: [
     { imageUrl: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=800' }
   ],

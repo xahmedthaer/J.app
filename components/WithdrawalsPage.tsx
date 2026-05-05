@@ -94,7 +94,7 @@ const EarningsInfoCard: React.FC = () => (
             </summary>
             <div className="mt-2 p-2 space-y-3 border-t dark:border-gray-700">
                  <InfoListItem icon="fa-circle-info">يلتزم التاجر وحده بتزويدنا برقم المحفظة أو الحساب الصحيح العائد له.</InfoListItem>
-                 <InfoListItem icon="fa-circle-info">لا يتحمل إلك أي مسؤولية عن المعاملات التي يتم تحويلها إلى أرقام محافظ غير صحيحة نتيجة خطأ في الإدخال من جانب التاجر.</InfoListItem>
+                 <InfoListItem icon="fa-circle-info">لا يتحمل لوكات بزنس أي مسؤولية عن المعاملات التي يتم تحويلها إلى أرقام محافظ غير صحيحة نتيجة خطأ في الإدخال من جانب التاجر.</InfoListItem>
                  <InfoListItem icon="fa-circle-info">المبالغ المحولة إلى أرقام محافظ خاطئة لا تسترجع ولا ترد بأي حال.</InfoListItem>
             </div>
         </details>
