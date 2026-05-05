@@ -16,17 +16,23 @@ async function startServer() {
 
   // Initialize Firebase Admin if Service Account is available
   let serviceAccount: any = null;
-  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+  const serviceAccountEnv = process.env.FIREBASE_SERVICE_ACCOUNT;
+  
+  if (serviceAccountEnv && admin.apps.length === 0) {
     try {
-      serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+      // Clean the environment variable in case it has unwanted characters
+      const cleanedEnv = serviceAccountEnv.trim();
+      serviceAccount = JSON.parse(cleanedEnv);
+      
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount)
       });
       console.log("Firebase Admin initialized successfully for project:", serviceAccount.project_id);
     } catch (error) {
       console.error("Failed to initialize Firebase Admin:", error);
+      serviceAccount = { error: error instanceof Error ? error.message : String(error) };
     }
-  } else {
+  } else if (!serviceAccountEnv) {
     console.warn("FIREBASE_SERVICE_ACCOUNT is missing. Real push notifications will not be sent.");
   }
 
@@ -34,8 +40,10 @@ async function startServer() {
   app.get('/api/admin/firebase-status', (req, res) => {
     res.json({
       initialized: admin.apps.length > 0,
-      projectId: serviceAccount ? serviceAccount.project_id : null,
+      projectId: serviceAccount && !serviceAccount.error ? serviceAccount.project_id : null,
       configProjectId: firebaseConfig.projectId,
+      envVariableExists: !!process.env.FIREBASE_SERVICE_ACCOUNT,
+      parseError: serviceAccount?.error || null,
       error: !process.env.FIREBASE_SERVICE_ACCOUNT ? "Missing FIREBASE_SERVICE_ACCOUNT env var" : null
     });
   });

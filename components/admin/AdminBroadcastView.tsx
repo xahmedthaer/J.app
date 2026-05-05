@@ -10,18 +10,39 @@ const AdminBroadcastView: React.FC<AdminBroadcastViewProps> = ({ onSend }) => {
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [firebaseStatus, setFirebaseStatus] = useState<{ initialized: boolean, projectId: string | null, configProjectId: string | null, error: string | null } | null>(null);
+  const [firebaseStatus, setFirebaseStatus] = useState<{ 
+    initialized: boolean, 
+    projectId: string | null, 
+    configProjectId: string | null, 
+    envVariableExists: boolean,
+    parseError: string | null,
+    error: string | null 
+  } | null>(null);
 
   React.useEffect(() => {
     fetch('/api/admin/firebase-status')
       .then(res => res.json())
       .then(data => setFirebaseStatus(data))
-      .catch(err => console.error("Error fetching firebase status:", err));
+      .catch(err => {
+        console.error("Error fetching firebase status:", err);
+        setFirebaseStatus({ 
+          initialized: false, 
+          projectId: null, 
+          configProjectId: null, 
+          envVariableExists: false, 
+          parseError: "فشل الاتصال بالسيرفر", 
+          error: "Load failed" 
+        });
+      });
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !message) return;
+    if (!firebaseStatus?.initialized) {
+      alert("لا يمكن الإرسال: Firebase Admin غير مهيأ. يرجى إضافة Service Account.");
+      return;
+    }
     
     setIsSending(true);
     try {
@@ -68,11 +89,30 @@ const AdminBroadcastView: React.FC<AdminBroadcastViewProps> = ({ onSend }) => {
           </div>
         </div>
 
-        {firebaseStatus?.error && (
+        {(!firebaseStatus?.initialized || firebaseStatus?.error) && (
           <div className="bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800 rounded-xl p-4 mb-6">
-            <p className="text-xs text-red-600 dark:text-red-400">
-              يرجى التأكد من إضافة مفتاح <strong>FIREBASE_SERVICE_ACCOUNT</strong> في إعدادات المشروع (Secrets).
+            <h3 className="text-red-700 dark:text-red-400 font-bold text-sm mb-2">إعدادات الإشعارات غير مكتملة</h3>
+            <p className="text-xs text-red-600 dark:text-red-400 mb-3">
+              لتفعيل الإشعارات الحقيقية، يجب إضافة ملف Service Account من Firebase كمتغير بيئة (Secret).
             </p>
+            
+            <div className="bg-white/50 dark:bg-black/20 p-3 rounded-lg space-y-2">
+              <p className="text-xs font-bold">الخطوات:</p>
+              <ol className="text-xs list-decimal list-inside space-y-1 text-gray-600 dark:text-gray-400">
+                <li>اذهب إلى إعدادات مشروع Firebase في متصفحك.</li>
+                <li>اذهب إلى <strong>Project Settings</strong> ثم <strong>Service Accounts</strong>.</li>
+                <li>اضغط على <strong>Generate New Private Key</strong> وحمل ملف الـ JSON.</li>
+                <li>افتح الملف وانسخ محتواه بالكامل.</li>
+                <li>في هذا التطبيق (AI Studio)، اذهب إلى <strong>Settings (⚙️)</strong> ثم <strong>Secrets</strong>.</li>
+                <li>أضف مفتاح جديد باسم <strong>FIREBASE_SERVICE_ACCOUNT</strong> وضع المحتوى داخله.</li>
+              </ol>
+            </div>
+
+            {firebaseStatus?.parseError && (
+              <div className="mt-3 p-2 bg-red-100 dark:bg-red-800/40 rounded border border-red-200 dark:border-red-700">
+                <p className="text-[10px] font-mono text-red-800 dark:text-red-300">Error: {firebaseStatus.parseError}</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -124,7 +164,7 @@ const AdminBroadcastView: React.FC<AdminBroadcastViewProps> = ({ onSend }) => {
             </button>
             <button
               type="submit"
-              disabled={isSending || !title || !message}
+              disabled={isSending || !title || !message || !firebaseStatus?.initialized}
               className="flex-[2] flex items-center justify-center gap-2 bg-primary text-white py-3 rounded-xl font-bold hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSending ? (
