@@ -28,6 +28,15 @@ async function startServer() {
   }
 
   // API Route for Broadcasting Notifications
+  // API Route for Broadcasting Notifications
+  app.get('/api/admin/firebase-status', (req, res) => {
+    res.json({
+      initialized: admin.apps.length > 0,
+      projectId: admin.apps.length > 0 ? admin.app().options.credential : null,
+      error: !process.env.FIREBASE_SERVICE_ACCOUNT ? "Missing FIREBASE_SERVICE_ACCOUNT env var" : null
+    });
+  });
+
   app.post('/api/broadcast', async (req, res) => {
     const { title, message } = req.body;
     

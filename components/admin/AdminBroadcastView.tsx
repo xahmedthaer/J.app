@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Send, Bell, Info } from 'lucide-react';
+import { CheckCircleIcon, XMarkIcon } from '../common/icons';
 
 interface AdminBroadcastViewProps {
   onSend: (title: string, message: string) => Promise<void>;
@@ -9,6 +10,14 @@ const AdminBroadcastView: React.FC<AdminBroadcastViewProps> = ({ onSend }) => {
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [firebaseStatus, setFirebaseStatus] = useState<{ initialized: boolean, error: string | null } | null>(null);
+
+  React.useEffect(() => {
+    fetch('/api/admin/firebase-status')
+      .then(res => res.json())
+      .then(data => setFirebaseStatus(data))
+      .catch(err => console.error("Error fetching firebase status:", err));
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,9 +42,30 @@ const AdminBroadcastView: React.FC<AdminBroadcastViewProps> = ({ onSend }) => {
           </div>
           <div>
             <h2 className="text-xl font-bold dark:text-white">إرسال إشعار عام</h2>
-            <p className="text-sm text-gray-500">سيتم إرسال هذا الإشعار لجميع المستخدمين الذين ثبتوا التطبيق ووافقوا على الإشعارات.</p>
+            <div className="flex items-center gap-2 mt-1">
+              {firebaseStatus?.initialized ? (
+                <span className="flex items-center gap-1 text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">
+                  <CheckCircleIcon className="w-3 h-3" />
+                  متصل بـ Firebase Admin
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold">
+                  <XMarkIcon className="w-3 h-3" />
+                  غير متصل (يجب إضافة Service Account)
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-gray-500 mt-1">سيتم إرسال هذا الإشعار لجميع المستخدمين الذين ثبتوا التطبيق ووافقوا على الإشعارات.</p>
           </div>
         </div>
+
+        {firebaseStatus?.error && (
+          <div className="bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800 rounded-xl p-4 mb-6">
+            <p className="text-xs text-red-600 dark:text-red-400">
+              يرجى التأكد من إضافة مفتاح <strong>FIREBASE_SERVICE_ACCOUNT</strong> في إعدادات المشروع (Secrets).
+            </p>
+          </div>
+        )}
 
         <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 rounded-xl p-4 mb-6 flex gap-3">
           <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
