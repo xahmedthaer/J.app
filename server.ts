@@ -14,6 +14,9 @@ async function startServer() {
 
   app.use(express.json());
 
+  // Explicitly serve public assets (like firebase-messaging-sw.js)
+  app.use(express.static(path.join(__dirname, 'public')));
+
   // Initialize Firebase Admin if Service Account is available
   let serviceAccount: any = null;
   const serviceAccountEnv = process.env.FIREBASE_SERVICE_ACCOUNT;

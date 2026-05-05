@@ -27,8 +27,12 @@ export const requestNotificationPermission = async (userId: string) => {
   try {
     const permission = await window.Notification.requestPermission();
     if (permission === 'granted') {
+      // Explicitly register the service worker to avoid MIME type issues with default paths
+      const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+      
       const token = await getToken(messaging, {
-        vapidKey: VAPID_KEY
+        vapidKey: VAPID_KEY,
+        serviceWorkerRegistration: registration
       });
       
       if (token) {
