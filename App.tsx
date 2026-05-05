@@ -547,6 +547,7 @@ const App: React.FC = () => {
                     isLoadingWithdrawals={false}
                     onNavigateToWithdrawals={() => handleMainViewChange('financial')}
                     onLogout={handleLogout}
+                    addNotification={addNotification}
                 />;
             case 'financial':
                 return <WithdrawalsPage 
