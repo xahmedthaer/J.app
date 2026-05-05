@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import admin from 'firebase-admin';
 import { getFirestore } from 'firebase-admin/firestore';
 import firebaseConfig from './firebase-applet-config.json' assert { type: 'json' };
+import serviceAccountKey from './firebase-service-account.json' assert { type: 'json' };
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -17,26 +18,19 @@ async function startServer() {
   // Explicitly serve public assets (like firebase-messaging-sw.js)
   app.use(express.static(path.join(__dirname, 'public')));
 
-  // Initialize Firebase Admin if Service Account is available
-  let serviceAccount: any = null;
-  const serviceAccountEnv = process.env.FIREBASE_SERVICE_ACCOUNT;
+  // Initialize Firebase Admin
+  let serviceAccount: any = serviceAccountKey;
   
-  if (serviceAccountEnv && admin.apps.length === 0) {
+  if (admin.apps.length === 0) {
     try {
-      // Clean the environment variable in case it has unwanted characters
-      const cleanedEnv = serviceAccountEnv.trim();
-      serviceAccount = JSON.parse(cleanedEnv);
-      
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount)
       });
-      console.log("Firebase Admin initialized successfully for project:", serviceAccount.project_id);
+      console.log("Firebase Admin initialized successfully using service account file for project:", serviceAccount.project_id);
     } catch (error) {
-      console.error("Failed to initialize Firebase Admin:", error);
-      serviceAccount = { error: error instanceof Error ? error.message : String(error) };
+      console.error("Failed to initialize Firebase Admin from file:", error);
+      serviceAccount = { ...serviceAccount, error: error instanceof Error ? error.message : String(error) };
     }
-  } else if (!serviceAccountEnv) {
-    console.warn("FIREBASE_SERVICE_ACCOUNT is missing. Real push notifications will not be sent.");
   }
 
   // API Route for Broadcasting Notifications
@@ -45,9 +39,10 @@ async function startServer() {
       initialized: admin.apps.length > 0,
       projectId: serviceAccount && !serviceAccount.error ? serviceAccount.project_id : null,
       configProjectId: firebaseConfig.projectId,
+      usingFile: true,
       envVariableExists: !!process.env.FIREBASE_SERVICE_ACCOUNT,
       parseError: serviceAccount?.error || null,
-      error: !process.env.FIREBASE_SERVICE_ACCOUNT ? "Missing FIREBASE_SERVICE_ACCOUNT env var" : null
+      error: admin.apps.length === 0 ? "Firebase Admin failed to initialize" : null
     });
   });
 
@@ -60,7 +55,7 @@ async function startServer() {
 
     if (!admin.apps.length) {
       return res.status(503).json({ 
-        error: "Firebase Admin is not configured. Please provide FIREBASE_SERVICE_ACCOUNT in environment variables." 
+        error: "Firebase Admin is not configured. Please ensure firebase-service-account.json is correctly set up." 
       });
     }
 
