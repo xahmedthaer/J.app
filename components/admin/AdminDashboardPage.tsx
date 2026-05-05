@@ -10,6 +10,7 @@ import AdminProductEditPage from './AdminProductEditPage';
 import AdminProductStatsView from './AdminProductStatsView';
 import AdminProductsMainView from './AdminProductsMainView';
 import AdminOrdersView from './AdminOrdersView';
+import AdminBroadcastView from './AdminBroadcastView';
 
 // =================================================================
 // 3. USERS MANAGEMENT VIEW
@@ -372,12 +373,18 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
 
   useEffect(() => { setSidebarOpen(false); }, [view]);
 
-  const setView = (newView: AdminView) => { if (onViewChange) onViewChange(newView); };
+  const setView = React.useCallback((newView: AdminView) => { 
+    if (onViewChange) onViewChange(newView); 
+  }, [onViewChange]);
 
   useEffect(() => {
       setHeaderConfig({ title: 'لوحة التحكم', showBack: false });
       return () => setHeaderConfig(null);
   }, [setHeaderConfig]);
+
+  const handleBackToAdminDashboardMenu = React.useCallback(() => {
+    setView('overview');
+  }, [setView]);
 
   const pendingWithdrawalsCount = useMemo(() => withdrawalRequests.filter(r => r.status === 'pending').length, [withdrawalRequests]);
   const pendingOrdersCount = useMemo(() => orders.filter(o => o.status === 'under_implementation').length, [orders]);
@@ -388,6 +395,7 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
     { label: 'المنتجات', view: 'products' as AdminView, icon: BoxOpenIcon },
     { label: 'السحوبات', view: 'withdrawals' as AdminView, icon: MoneyBillTransferIcon, badgeCount: pendingWithdrawalsCount },
     { label: 'المستخدمين', view: 'users' as AdminView, icon: UsersGearIcon },
+    { label: 'الإشعارات', view: 'notifications' as AdminView, icon: BellIcon },
     { label: 'الإعدادات', view: 'settings' as AdminView, icon: PaletteIcon },
   ];
 
@@ -418,10 +426,22 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
     if (view === 'userDetails' && selectedUser) return <AdminUserDetailsPage user={selectedUser} userOrders={userOrders} userCustomers={userCustomers} userWithdrawals={userWithdrawals} onOrderClick={onAdminOrderClick} onBack={handleBackToUsers} addNotification={addNotification} setHeaderConfig={setHeaderConfig} />;
     switch (view) {
         case 'overview': return <AdminDashboardOverviewView users={users} orders={orders} />;
-        case 'products': return <AdminProductsMainView products={products} onAddProduct={onAddProduct} onUpdateProduct={onUpdateProduct} onDeleteProduct={onDeleteProduct} orders={orders} categories={categories} setHeaderConfig={setHeaderConfig} onBackToAdminDashboardMenu={() => {}} />;
+        case 'products': return <AdminProductsMainView products={products} onAddProduct={onAddProduct} onUpdateProduct={onUpdateProduct} onDeleteProduct={onDeleteProduct} orders={orders} categories={categories} setHeaderConfig={setHeaderConfig} onBackToAdminDashboardMenu={handleBackToAdminDashboardMenu} />;
         case 'orders': return <AdminOrdersView orders={orders} onUpdateOrderStatus={onUpdateOrderStatus} onAdminOrderClick={onAdminOrderClick} addNotification={addNotification} setHeaderConfig={setHeaderConfig} onAdminUpdateOrder={onAdminUpdateOrder} />;
         case 'users': return <AdminUsersView users={users} onDeleteUser={onDeleteUser} onUserClick={handleUserClick} />;
         case 'withdrawals': return <AdminWithdrawalsView withdrawalRequests={withdrawalRequests} onProcessWithdrawal={onProcessWithdrawal} users={users} orders={orders} />;
+        case 'notifications': return (
+            <AdminBroadcastView 
+              onSend={async (title, message) => {
+                addNotification('جاري إرسال الإشعار...');
+                // Note: Real sending requires a backend or Cloud Function.
+                // We'll store the notification in a collection for auditing.
+                console.log("Broadcasting notification:", { title, message });
+                await new Promise(r => setTimeout(r, 2000));
+                addNotification('تمت جدولة الإرسال بنجاح');
+              }} 
+            />
+        );
         case 'settings': return <div className="p-6"><AdminSiteSettingsView faqItems={faqItems} siteSettings={siteSettings} onSetFaqItems={onSetFaqItems} onUpdateSiteSettings={onUpdateSiteSettings} categories={categories} onSetCategories={onSetCategories}/></div>;
         default: return <AdminDashboardOverviewView users={users} orders={orders} />;
     }

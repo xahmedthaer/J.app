@@ -152,6 +152,16 @@
         "answer": { "type": "string" }
       },
       "required": ["question", "answer"]
+    },
+    "FcmToken": {
+      "title": "FcmToken",
+      "description": "Notification tokens for users",
+      "type": "object",
+      "properties": {
+        "tokens": { "type": "array", "items": { "type": "string" } },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["tokens", "updatedAt"]
     }
   },
   "firestore": {
@@ -186,6 +196,10 @@
     "faq/{faqId}": {
       "schema": "FaqItem",
       "description": "Frequently asked questions"
+    },
+    "fcm_tokens/{userId}": {
+      "schema": "FcmToken",
+      "description": "Push notification storage per user"
     },
     "tickets/{ticketId}": {
       "schema": "Ticket",

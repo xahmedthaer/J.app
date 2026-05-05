@@ -86,42 +86,8 @@ const App: React.FC = () => {
         return savedTheme === 'dark';
     });
 
-    useEffect(() => {
-        if (isDarkMode) {
-            document.documentElement.classList.add('dark');
-            localStorage.setItem('theme', 'dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-            localStorage.setItem('theme', 'light');
-        }
-    }, [isDarkMode]);
-
-    const toggleDarkMode = () => {
-        setIsDarkMode(prevMode => !prevMode);
-    };
-
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                // Ensure initial data exists in Firestore - only bootstrap admin triggers it
-                if (user.email === 'Xahmedthaer@gmail.com') {
-                    import('./services/seedService').then(m => m.seedInitialData());
-                }
-                
-                const profile = await firebaseService.syncUserProfile(user);
-                setCurrentUser(profile);
-                if (profile) loadRealData(profile);
-            } else {
-                setCurrentUser(null);
-                setProducts(mockProducts);
-                setCategories(mockCategories);
-            }
-            setIsAuthChecking(false);
-        });
-        return () => unsubscribe();
-    }, []);
-
-    const loadRealData = async (user: User) => {
+    // Stabilize loadRealData to prevent re-renders when passed down
+    const loadRealData = React.useCallback(async (user: User) => {
         setIsLoadingProducts(true);
         try {
             const [fetchedProducts, fetchedCategories, fetchedSettings, fetchedFaqs] = await Promise.all([
@@ -151,12 +117,66 @@ const App: React.FC = () => {
         } finally {
             setIsLoadingProducts(false);
         }
+    }, [mockProducts, mockCategories]);
+
+    useEffect(() => {
+        if (isDarkMode) {
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+        }
+    }, [isDarkMode]);
+
+    const toggleDarkMode = () => {
+        setIsDarkMode(prevMode => !prevMode);
     };
 
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // Ensure initial data exists in Firestore - only bootstrap admin triggers it
+                if (user.email?.toLowerCase() === 'xahmedthaer@gmail.com') {
+                    import('./services/seedService').then(m => m.seedInitialData());
+                }
+                
+                const profile = await firebaseService.syncUserProfile(user);
+                setCurrentUser(profile);
+                if (profile) {
+                    loadRealData(profile);
+                    // Request notification permission
+                    import('./services/notificationService').then(n => {
+                        n.requestNotificationPermission(profile.id);
+                    });
+                }
+            } else {
+                setCurrentUser(null);
+                setProducts(mockProducts);
+                setCategories(mockCategories);
+            }
+            setIsAuthChecking(false);
+        });
+        return () => unsubscribe();
+    }, [loadRealData]);
+
     const handleLogout = async () => {
-        await signOut(auth);
-        setCurrentUser(null);
-        addNotification('تم تسجيل الخروج');
+        try {
+            await signOut(auth);
+            // Clear all states to prevent data leakage between sessions
+            setCurrentUser(null);
+            setOrders([]);
+            setCustomers([]);
+            setWithdrawalRequests([]);
+            setCartItems([]);
+            setSavedProductIds([]);
+            setPage('products');
+            setMainView('products');
+            addNotification('تم تسجيل الخروج بنجاح');
+        } catch (error) {
+            console.error("Logout failed", error);
+            addNotification('فشل تسجيل الخروج');
+        }
     };
 
     const addNotification = (message: string) => {
@@ -172,7 +192,7 @@ const App: React.FC = () => {
         setPage(newPage);
     };
 
-    const handleBack = () => {
+    const handleBack = React.useCallback(() => {
         if (headerConfig?.showBack && headerConfig.onBack) {
             headerConfig.onBack();
             return;
@@ -189,9 +209,9 @@ const App: React.FC = () => {
         const lastPage = pageHistory[pageHistory.length - 1] || 'products';
         setPageHistory(prev => prev.slice(0, -1));
         setPage(lastPage);
-    };
+    }, [headerConfig, page, selectedCategory, globalSearchQuery, selectedOrderStatus, pageHistory]);
 
-    const handleMainViewChange = (view: MainView) => {
+    const handleMainViewChange = React.useCallback((view: MainView) => {
         if (view === 'products') {
             setSelectedCategory(null);
             setGlobalSearchQuery('');
@@ -201,17 +221,17 @@ const App: React.FC = () => {
         }
         setMainView(view);
         navigateTo(view as Page);
-    };
+    }, [navigateTo]);
     
-    const handleCategorySelect = (category: Category) => {
+    const handleCategorySelect = React.useCallback((category: Category) => {
         if (category.name === 'الكل') {
             setSelectedCategory(null);
         } else {
             setSelectedCategory(category);
         }
-    };
+    }, []);
     
-    const handleCategorySelectForPage = (category: Category) => {
+    const handleCategorySelectForPage = React.useCallback((category: Category) => {
         if (category.name === 'الكل') {
             setSelectedCategory(null);
         } else {
@@ -219,23 +239,24 @@ const App: React.FC = () => {
         }
         setMainView('products'); 
         navigateTo('products');
-    };
+    }, [navigateTo]);
 
-    const handleProductClick = (product: Product) => {
+    const handleProductClick = React.useCallback((product: Product) => {
         setSelectedProduct(product);
         navigateTo('productDetails');
-    };
+    }, [navigateTo]);
 
-    const handleSaveToggle = (productId: string) => {
+    const handleSaveToggle = React.useCallback((productId: string) => {
         setSavedProductIds(prev =>
             prev.includes(productId)
                 ? prev.filter(id => id !== productId)
                 : [...prev, productId]
         );
-        addNotification(savedProductIds.includes(productId) ? 'تمت إزالة المنتج من المحفوظات' : 'تم حفظ المنتج');
-    };
+        // We use a small hack for notification because we don't want savedProductIds in dependency
+        addNotification('تم تحديث المحفوظات');
+    }, [addNotification]);
 
-    const handleAddToCart = (product: Product, size: string) => {
+    const handleAddToCart = React.useCallback((product: Product, size: string) => {
         setCartItems(prev => {
             const existingItem = prev.find(item => item.product.id === product.id && item.size === size);
             if (existingItem) {
@@ -248,9 +269,9 @@ const App: React.FC = () => {
             return [...prev, { product, quantity: 1, size, customer_price: 0 }];
         });
         addNotification(`تمت إضافة "${product.name}" إلى السلة`);
-    };
+    }, [addNotification]);
 
-    const handleUpdateCartQuantity = (productId: string, size: string, quantity: number) => {
+    const handleUpdateCartQuantity = React.useCallback((productId: string, size: string, quantity: number) => {
         if (quantity <= 0) {
             setCartItems(prev => prev.filter(item => !(item.product.id === productId && item.size === size)));
         } else {
@@ -260,28 +281,28 @@ const App: React.FC = () => {
                 )
             );
         }
-    };
+    }, []);
     
-    const handleUpdateCartPrice = (productId: string, size: string, price: number) => {
+    const handleUpdateCartPrice = React.useCallback((productId: string, size: string, price: number) => {
         setCartItems(prev =>
             prev.map(item =>
                 item.product.id === productId && item.size === size ? { ...item, customer_price: price } : item
             )
         );
-    };
+    }, []);
     
-    const handleClearCart = () => {
+    const handleClearCart = React.useCallback(() => {
         if (window.confirm("هل أنت متأكد من رغبتك في إفراغ السلة؟")) {
             setCartItems([]);
         }
-    }
+    }, [])
 
-    const handleOrderClick = (order: Order) => {
+    const handleOrderClick = React.useCallback((order: Order) => {
         setSelectedOrder(order);
         navigateTo('orderDetails');
-    };
+    }, [navigateTo]);
 
-    const handleOrderConfirmed = async (orderData: Omit<Order, 'id' | 'user_id' | 'date' | 'time' | 'status' | 'created_at'>) => {
+    const handleOrderConfirmed = React.useCallback(async (orderData: Omit<Order, 'id' | 'user_id' | 'date' | 'time' | 'status' | 'created_at'>) => {
         if (!currentUser) {
             addNotification("يجب تسجيل الدخول لإكمال الطلب.");
             return;
@@ -302,9 +323,9 @@ const App: React.FC = () => {
         setCheckoutStep(1);
         navigateTo('orders');
         addNotification("تم إرسال طلبك بنجاح!");
-    };
+    }, [currentUser, navigateTo, addNotification]);
 
-    const handleAddCustomer = async (customerData: Omit<Customer, 'id' | 'user_id'>) => {
+    const handleAddCustomer = React.useCallback(async (customerData: Omit<Customer, 'id' | 'user_id'>) => {
         if (!currentUser) return null;
         const newCustomer: Customer = { ...customerData, id: `cust-${Date.now()}`, user_id: currentUser.id };
         const savedCustomer = await firebaseService.addCustomer(newCustomer);
@@ -314,23 +335,22 @@ const App: React.FC = () => {
             return savedCustomer;
         }
         return null;
-    };
+    }, [currentUser, addNotification]);
 
-    const handleUpdateCustomer = async (updatedCustomer: Customer) => {
-        // Need service call here
-        await firebaseService.addCustomer(updatedCustomer); // Overwrites in this mock service
+    const handleUpdateCustomer = React.useCallback(async (updatedCustomer: Customer) => {
+        await firebaseService.addCustomer(updatedCustomer); 
         setCustomers(prev => prev.map(c => c.id === updatedCustomer.id ? { ...c, ...updatedCustomer } : c));
         addNotification('تم تحديث بيانات الزبون');
-    };
+    }, [addNotification]);
 
-    const handleDeleteCustomer = (customerId: string) => {
+    const handleDeleteCustomer = React.useCallback((customerId: string) => {
         if (window.confirm("هل أنت متأكد من حذف هذا الزبون؟")) {
             setCustomers(prev => prev.filter(c => c.id !== customerId));
             addNotification('تم حذف الزبون');
         }
-    };
+    }, [addNotification]);
 
-    const handleAccountMenuClick = (view: AccountSubPageView) => {
+    const handleAccountMenuClick = React.useCallback((view: AccountSubPageView) => {
         setAccountSubPageView(view);
         if (view === 'adminDashboard') {
             setAdminView('overview');
@@ -339,53 +359,48 @@ const App: React.FC = () => {
         if (view !== 'adminDashboard') {
             setHeaderConfig(null);
         }
-    };
+    }, [navigateTo]);
     
-    const handleUpdateUser = (updatedUserData: Partial<User>) => {
+    const handleUpdateUser = React.useCallback((updatedUserData: Partial<User>) => {
         if (!currentUser) return;
         const updatedUser = { ...currentUser, ...updatedUserData };
         setCurrentUser(updatedUser);
-        setUsers(prev => prev.map(u => u.id === currentUser.id ? updatedUser : u));
         addNotification('تم تحديث الملف الشخصي بنجاح');
-    };
+    }, [currentUser, addNotification]);
 
-    const handleAddProduct = async (newProductData: Omit<Product, 'id'>) => {
+    const handleAddProduct = React.useCallback(async (newProductData: Omit<Product, 'id'>) => {
         const product = await firebaseService.addProduct(newProductData);
         if (product) {
             setProducts(prev => [product, ...prev]);
             addNotification(`تمت إضافة المنتج "${product.name}"`);
         }
-    };
+    }, [addNotification]);
 
-    const handleUpdateProduct = async (updatedProduct: Product) => {
+    const handleUpdateProduct = React.useCallback(async (updatedProduct: Product) => {
         await firebaseService.updateProduct(updatedProduct);
         setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
         addNotification(`تم تحديث المنتج "${updatedProduct.name}"`);
-    };
+    }, [addNotification]);
 
-    const handleDeleteProduct = async (productId: string) => {
+    const handleDeleteProduct = React.useCallback(async (productId: string) => {
         await firebaseService.deleteProduct(productId);
         setProducts(prev => prev.filter(p => p.id !== productId));
         addNotification('تم حذف المنتج');
-    };
+    }, [addNotification]);
 
-    const handleUpdateOrderStatus = async (orderId: string, status: Order['status']) => {
+    const handleUpdateOrderStatus = React.useCallback(async (orderId: string, status: Order['status']) => {
         await firebaseService.updateOrderStatus(orderId, status);
         setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
-        if (selectedOrder?.id === orderId) {
-            setSelectedOrder(prev => prev ? { ...prev, status } : null);
-        }
+        setSelectedOrder(prev => prev?.id === orderId ? { ...prev, status } : prev);
         addNotification(`تم تحديث حالة الطلب #${orderId}`);
-    };
+    }, [addNotification]);
 
-    const handleAdminUpdateOrder = async (orderId: string, updates: Partial<Order>) => {
+    const handleAdminUpdateOrder = React.useCallback(async (orderId: string, updates: Partial<Order>) => {
         await firebaseService.updateOrder(orderId, updates);
         setOrders(prev => prev.map(o => o.id === orderId ? { ...o, ...updates } : o));
-        if (selectedOrder?.id === orderId) {
-            setSelectedOrder(prev => prev ? { ...prev, ...updates } : null);
-        }
+        setSelectedOrder(prev => prev?.id === orderId ? { ...prev, ...updates } : prev);
         addNotification(`تم تعديل بيانات الطلب #${orderId}`);
-    };
+    }, [addNotification]);
 
     const handleDeleteUser = (userId: string) => {
         if (window.confirm("هل أنت متأكد من حذف هذا المستخدم؟ سيتم حذف جميع بياناته المتعلقة.")) {

@@ -78,28 +78,39 @@ export const syncUserProfile = async (user: any, additionalData?: { name?: strin
     const existingData = userDoc.data() as User;
     
     // Auto-repair admin status if email matches
+    let updatedData = { ...existingData };
+    let hasChanges = false;
+
     if (isBootstrapAdmin && !existingData.is_admin) {
         try {
             await updateDoc(userRef, { is_admin: true });
-            existingData.is_admin = true;
+            updatedData.is_admin = true;
+            hasChanges = true;
         } catch (error) {
             console.error("Failed to repair admin status", error);
         }
     }
 
     if (additionalData) {
-        // Optional update if data is provided
-        try {
-            await updateDoc(userRef, additionalData);
-            if (additionalData.phone) {
-                await setDoc(doc(db, 'phone_map', additionalData.phone), { email: existingData.email, uid: user.uid });
+        // Only update if data actually changed
+        const changes: any = {};
+        if (additionalData.name && additionalData.name !== existingData.name) changes.name = additionalData.name;
+        if (additionalData.phone && additionalData.phone !== existingData.phone) changes.phone = additionalData.phone;
+
+        if (Object.keys(changes).length > 0) {
+            try {
+                await updateDoc(userRef, changes);
+                if (changes.phone) {
+                    await setDoc(doc(db, 'phone_map', changes.phone), { email: existingData.email, uid: user.uid });
+                }
+                updatedData = { ...updatedData, ...changes };
+                hasChanges = true;
+            } catch (error) {
+                handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
             }
-            return { ...existingData, ...additionalData };
-        } catch (error) {
-            handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
         }
     }
-    return existingData;
+    return updatedData;
   }
   return null;
 };
