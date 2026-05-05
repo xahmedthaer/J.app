@@ -620,36 +620,36 @@ const App: React.FC = () => {
 
     return (
         <div className="h-screen w-screen max-w-lg mx-auto bg-white dark:bg-slate-900 flex flex-col font-cairo" dir="rtl">
+            {showMainHeader && <Header 
+                page={page} 
+                onBack={handleBack}
+                cartItemCount={cartItems.length}
+                onCartClick={() => navigateTo('cart')}
+                onSupportClick={handleWhatsAppSupport} 
+                onSavedProductsClick={() => handleAccountMenuClick('savedProducts')}
+                onClearCart={handleClearCart}
+                orderId={selectedOrder?.id}
+                isProductSaved={selectedProduct ? savedProductIds.includes(selectedProduct.id) : false}
+                onSaveToggle={selectedProduct ? () => handleSaveToggle(selectedProduct.id) : undefined}
+                accountSubPageTitle={
+                    accountSubPageView === 'editProfile' ? 'تعديل الملف الشخصي' :
+                    accountSubPageView === 'savedProducts' ? 'المنتجات المحفوظة' :
+                    accountSubPageView === 'customerDetails' ? 'تفاصيل الزبائن' :
+                    accountSubPageView === 'instructions' ? 'الاسئلة الشائعة' :
+                    accountSubPageView === 'adminDashboard' ? 'لوحة التحكم' : 
+                    accountSubPageView === 'privacyPolicy' ? 'سياسة الخصوصية' :
+                    accountSubPageView === 'termsAndConditions' ? 'الشروط والأحكام' : 
+                    accountSubPageView === 'serviceFees' ? 'رسوم الخدمة' :
+                    accountSubPageView === 'myTickets' ? 'تذاكري' : ''
+                }
+                checkoutPageTitle={getCheckoutTitle()}
+                categoryTitle={selectedCategory?.name}
+                orderStatusTitle={selectedOrderStatus ? orderStatusMap[selectedOrderStatus] : undefined}
+                headerConfig={headerConfig}
+                searchQuery={globalSearchQuery}
+                setSearchQuery={setGlobalSearchQuery}
+            />}
             <main className={`flex-grow overflow-y-auto ${showBottomNav ? 'pb-16' : ''}`}>
-                {showMainHeader && <Header 
-                    page={page} 
-                    onBack={handleBack}
-                    cartItemCount={cartItems.length}
-                    onCartClick={() => navigateTo('cart')}
-                    onSupportClick={handleWhatsAppSupport} 
-                    onSavedProductsClick={() => handleAccountMenuClick('savedProducts')}
-                    onClearCart={handleClearCart}
-                    orderId={selectedOrder?.id}
-                    isProductSaved={selectedProduct ? savedProductIds.includes(selectedProduct.id) : false}
-                    onSaveToggle={selectedProduct ? () => handleSaveToggle(selectedProduct.id) : undefined}
-                    accountSubPageTitle={
-                        accountSubPageView === 'editProfile' ? 'تعديل الملف الشخصي' :
-                        accountSubPageView === 'savedProducts' ? 'المنتجات المحفوظة' :
-                        accountSubPageView === 'customerDetails' ? 'تفاصيل الزبائن' :
-                        accountSubPageView === 'instructions' ? 'الاسئلة الشائعة' :
-                        accountSubPageView === 'adminDashboard' ? 'لوحة التحكم' : 
-                        accountSubPageView === 'privacyPolicy' ? 'سياسة الخصوصية' :
-                        accountSubPageView === 'termsAndConditions' ? 'الشروط والأحكام' : 
-                        accountSubPageView === 'serviceFees' ? 'رسوم الخدمة' :
-                        accountSubPageView === 'myTickets' ? 'تذاكري' : ''
-                    }
-                    checkoutPageTitle={getCheckoutTitle()}
-                    categoryTitle={selectedCategory?.name}
-                    orderStatusTitle={selectedOrderStatus ? orderStatusMap[selectedOrderStatus] : undefined}
-                    headerConfig={headerConfig}
-                    searchQuery={globalSearchQuery}
-                    setSearchQuery={setGlobalSearchQuery}
-                />}
                 {renderPage()}
             </main>
             {showBottomNav && <BottomNav activeView={mainView} setActiveView={handleMainViewChange} />}

@@ -43,7 +43,7 @@ const NavItem: React.FC<{
 const BottomNav: React.FC<BottomNavProps> = ({ activeView, setActiveView }) => {
   return (
     <nav 
-      className="fixed bottom-0 left-0 right-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg z-50 border-t border-gray-200/50 dark:border-gray-700/50 shadow-[0_-8px_30px_rgba(0,0,0,0.04)]"
+      className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 z-50 border-t border-gray-200 dark:border-gray-700 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       {/* Increased height to h-16 (64px) for better touch targets */}

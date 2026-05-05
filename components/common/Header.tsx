@@ -75,7 +75,7 @@ const Header: React.FC<HeaderProps> = ({ page, onBack, cartItemCount, onCartClic
 
   return (
     <header 
-        className="sticky top-0 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl z-50 flex-shrink-0 border-b border-gray-200/50 dark:border-gray-800/50" 
+        className="bg-white dark:bg-slate-900 z-40 flex-shrink-0 border-b border-gray-50 dark:border-gray-800/50" 
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
       <div className="container mx-auto px-5 h-20 flex items-center justify-between">
