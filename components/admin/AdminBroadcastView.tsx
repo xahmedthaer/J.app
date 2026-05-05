@@ -21,7 +21,13 @@ const AdminBroadcastView: React.FC<AdminBroadcastViewProps> = ({ onSend }) => {
 
   React.useEffect(() => {
     fetch('/api/admin/firebase-status')
-      .then(res => res.json())
+      .then(async res => {
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`Server error: ${res.status} - ${text}`);
+        }
+        return res.json();
+      })
       .then(data => setFirebaseStatus(data))
       .catch(err => {
         console.error("Error fetching firebase status:", err);
@@ -30,7 +36,7 @@ const AdminBroadcastView: React.FC<AdminBroadcastViewProps> = ({ onSend }) => {
           projectId: null, 
           configProjectId: null, 
           envVariableExists: false, 
-          parseError: "فشل الاتصال بالسيرفر", 
+          parseError: err.message, 
           error: "Load failed" 
         });
       });
