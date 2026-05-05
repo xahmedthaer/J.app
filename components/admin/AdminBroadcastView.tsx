@@ -69,33 +69,18 @@ const AdminBroadcastView: React.FC<AdminBroadcastViewProps> = ({ onSend }) => {
             />
           </div>
 
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                if ('Notification' in window && Notification.permission === 'granted') {
-                  new Notification(title || "تجربة إشعار", { body: message || "هذا إشعار تجريبي من المتصفح" });
-                } else {
-                  alert("إذن الإشعارات غير مفعل في متصفحك أو غير مدعوم.");
-                }
-              }}
-              className="flex-1 flex items-center justify-center gap-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 py-3 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-            >
-              تجربة محلية
-            </button>
-            <button
-              type="submit"
-              disabled={isSending || !title || !message}
-              className="flex-[2] flex items-center justify-center gap-2 bg-primary text-white py-3 rounded-xl font-bold hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSending ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <Send className="w-5 h-5" />
-              )}
-              إرسال عام للهواتف
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={isSending || !title || !message}
+            className="w-full flex items-center justify-center gap-2 bg-primary text-white py-3 rounded-xl font-bold hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSending ? (
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <Send className="w-5 h-5" />
+            )}
+            إرسال الآن
+          </button>
         </form>
       </div>
     </div>
