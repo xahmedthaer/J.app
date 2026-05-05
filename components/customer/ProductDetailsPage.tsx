@@ -267,7 +267,7 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product, onAddT
                                       >
                                           {size}
                                           {!available && (
-                                              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] px-1 rounded-full border border-white">نفذ</span>
+                                              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] px-1 rounded-full border border-white">غير متوفر</span>
                                           )}
                                       </button>
                                   );
@@ -341,7 +341,7 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product, onAddT
           >
               <CartIcon className="w-6 h-6" />
               <span>
-                  {product.stock === 0 ? 'للأسف، نفذت الكمية' : !selectedSize ? 'اختر القياس أولاً' : `أضف للسلة • ${displayPrice.toLocaleString()} د.ع`}
+                  {product.stock === 0 ? 'للأسف، غير متوفر حالياً' : !selectedSize ? 'اختر القياس أولاً' : `أضف للسلة • ${displayPrice.toLocaleString()} د.ع`}
               </span>
           </button>
       </div>

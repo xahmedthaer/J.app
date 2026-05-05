@@ -41,9 +41,14 @@ export interface HeaderConfig {
     onAddTicket?: () => void;
 }
 
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { auth } from './firebaseConfig';
+import * as firebaseService from './services/firebaseService';
+import AuthPage from './components/auth/AuthPage';
+
 const App: React.FC = () => {
-    // تم تغيير المستخدم الافتراضي من mockUsers[2] إلى mockUsers[0] ليظهر زر لوحة التحكم
-    const [currentUser, setCurrentUser] = useState<User | null>(mockUsers[0]);
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const [isAuthChecking, setIsAuthChecking] = useState(true);
     const [products, setProducts] = useState<Product[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
     const [users, setUsers] = useState<User[]>([]);
@@ -96,18 +101,62 @@ const App: React.FC = () => {
     };
 
     useEffect(() => {
-        setTimeout(() => {
-            setProducts(mockProducts);
-            setOrders(mockOrders);
-            setUsers(mockUsers);
-            setCustomers(mockCustomers);
-            setWithdrawalRequests(mockWithdrawalRequests);
-            setFaqItems(mockFaqItems);
-            setSiteSettings(mockSiteSettings);
-            setCategories(mockCategories);
-            setIsLoadingProducts(false);
-        }, 1000);
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                await firebaseService.syncUserProfile(user);
+                // Seed after sync just in case
+                import('./services/seedService').then(m => m.seedInitialData());
+                
+                const profile = await firebaseService.syncUserProfile(user);
+                setCurrentUser(profile);
+                loadRealData(profile);
+            } else {
+                setCurrentUser(null);
+                setProducts(mockProducts);
+                setCategories(mockCategories);
+            }
+            setIsAuthChecking(false);
+        });
+        return () => unsubscribe();
     }, []);
+
+    const loadRealData = async (user: User) => {
+        setIsLoadingProducts(true);
+        try {
+            const [fetchedProducts, fetchedCategories, fetchedSettings, fetchedFaqs] = await Promise.all([
+                firebaseService.getProducts(),
+                firebaseService.getCategories(),
+                firebaseService.getSiteSettings(),
+                Promise.resolve([]) // Add faq fetch if needed
+            ]);
+
+            if (fetchedProducts.length > 0) setProducts(fetchedProducts);
+            if (fetchedCategories.length > 0) setCategories(fetchedCategories);
+            if (fetchedSettings) setSiteSettings(fetchedSettings);
+            
+            // User specific data
+            const [fetchedOrders, fetchedCustomers, fetchedWithdrawals] = await Promise.all([
+                firebaseService.getOrders(user.is_admin ? undefined : user.id),
+                firebaseService.getCustomers(user.id),
+                firebaseService.getWithdrawalRequests(user.is_admin ? undefined : user.id)
+            ]);
+            
+            setOrders(fetchedOrders);
+            setCustomers(fetchedCustomers);
+            setWithdrawalRequests(fetchedWithdrawals);
+
+        } catch (error) {
+            console.error("Error loading data", error);
+        } finally {
+            setIsLoadingProducts(false);
+        }
+    };
+
+    const handleLogout = async () => {
+        await signOut(auth);
+        setCurrentUser(null);
+        addNotification('تم تسجيل الخروج');
+    };
 
     const addNotification = (message: string) => {
         const newId = Date.now();
@@ -231,7 +280,7 @@ const App: React.FC = () => {
         navigateTo('orderDetails');
     };
 
-    const handleOrderConfirmed = (orderData: Omit<Order, 'id' | 'user_id' | 'date' | 'time' | 'status' | 'created_at'>) => {
+    const handleOrderConfirmed = async (orderData: Omit<Order, 'id' | 'user_id' | 'date' | 'time' | 'status' | 'created_at'>) => {
         if (!currentUser) {
             addNotification("يجب تسجيل الدخول لإكمال الطلب.");
             return;
@@ -245,6 +294,8 @@ const App: React.FC = () => {
             time: new Date().toLocaleTimeString('ar-IQ'),
             created_at: new Date().toISOString(),
         };
+        
+        await firebaseService.createOrder(newOrder);
         setOrders(prev => [newOrder, ...prev]);
         setCartItems([]);
         setCheckoutStep(1);
@@ -252,15 +303,21 @@ const App: React.FC = () => {
         addNotification("تم إرسال طلبك بنجاح!");
     };
 
-    const handleAddCustomer = (customerData: Omit<Customer, 'id' | 'user_id'>) => {
+    const handleAddCustomer = async (customerData: Omit<Customer, 'id' | 'user_id'>) => {
         if (!currentUser) return null;
         const newCustomer: Customer = { ...customerData, id: `cust-${Date.now()}`, user_id: currentUser.id };
-        setCustomers(prev => [newCustomer, ...prev]);
-        addNotification('تمت إضافة الزبون بنجاح');
-        return newCustomer;
+        const savedCustomer = await firebaseService.addCustomer(newCustomer);
+        if (savedCustomer) {
+            setCustomers(prev => [savedCustomer, ...prev]);
+            addNotification('تمت إضافة الزبون بنجاح');
+            return savedCustomer;
+        }
+        return null;
     };
 
-    const handleUpdateCustomer = (updatedCustomer: Customer) => {
+    const handleUpdateCustomer = async (updatedCustomer: Customer) => {
+        // Need service call here
+        await firebaseService.addCustomer(updatedCustomer); // Overwrites in this mock service
         setCustomers(prev => prev.map(c => c.id === updatedCustomer.id ? { ...c, ...updatedCustomer } : c));
         addNotification('تم تحديث بيانات الزبون');
     };
@@ -291,27 +348,28 @@ const App: React.FC = () => {
         addNotification('تم تحديث الملف الشخصي بنجاح');
     };
 
-    const handleAddProduct = (newProductData: Omit<Product, 'id'>) => {
-        const newProduct: Product = {
-            ...newProductData,
-            id: `prod-${Date.now()}`,
-            created_at: new Date().toISOString(),
-        };
-        setProducts(prev => [newProduct, ...prev]);
-        addNotification(`تمت إضافة المنتج "${newProduct.name}"`);
+    const handleAddProduct = async (newProductData: Omit<Product, 'id'>) => {
+        const product = await firebaseService.addProduct(newProductData);
+        if (product) {
+            setProducts(prev => [product, ...prev]);
+            addNotification(`تمت إضافة المنتج "${product.name}"`);
+        }
     };
 
-    const handleUpdateProduct = (updatedProduct: Product) => {
+    const handleUpdateProduct = async (updatedProduct: Product) => {
+        await firebaseService.updateProduct(updatedProduct);
         setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
         addNotification(`تم تحديث المنتج "${updatedProduct.name}"`);
     };
 
-    const handleDeleteProduct = (productId: string) => {
+    const handleDeleteProduct = async (productId: string) => {
+        await firebaseService.deleteProduct(productId);
         setProducts(prev => prev.filter(p => p.id !== productId));
         addNotification('تم حذف المنتج');
     };
 
-    const handleUpdateOrderStatus = (orderId: string, status: Order['status']) => {
+    const handleUpdateOrderStatus = async (orderId: string, status: Order['status']) => {
+        await firebaseService.updateOrderStatus(orderId, status);
         setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
         if (selectedOrder?.id === orderId) {
             setSelectedOrder(prev => prev ? { ...prev, status } : null);
@@ -319,7 +377,8 @@ const App: React.FC = () => {
         addNotification(`تم تحديث حالة الطلب #${orderId}`);
     };
 
-    const handleAdminUpdateOrder = (orderId: string, updates: Partial<Order>) => {
+    const handleAdminUpdateOrder = async (orderId: string, updates: Partial<Order>) => {
+        await firebaseService.updateOrder(orderId, updates);
         setOrders(prev => prev.map(o => o.id === orderId ? { ...o, ...updates } : o));
         if (selectedOrder?.id === orderId) {
             setSelectedOrder(prev => prev ? { ...prev, ...updates } : null);
@@ -337,14 +396,16 @@ const App: React.FC = () => {
         }
     };
 
-    const handleProcessWithdrawal = (request: WithdrawalRequest) => {
+    const handleProcessWithdrawal = async (request: WithdrawalRequest) => {
         if (window.confirm(`هل تؤكد إتمام تحويل مبلغ ${request.amount.toLocaleString()} IQD للمستخدم؟`)) {
-            setWithdrawalRequests(prev => prev.map(r => r.id === request.id ? { ...r, status: 'completed', processed_date: new Date().toISOString() } : r));
+            const updates = { status: 'completed' as const, processed_date: new Date().toISOString() };
+            await firebaseService.updateWithdrawalRequest(request.id, updates);
+            setWithdrawalRequests(prev => prev.map(r => r.id === request.id ? { ...r, ...updates } : r));
             addNotification('تمت معالجة طلب السحب');
         }
     };
 
-    const handleAddWithdrawalRequest = (walletType: string, walletNumber: string) => {
+    const handleAddWithdrawalRequest = async (walletType: string, walletNumber: string) => {
         if (!currentUser || realizedBalance <= 0 || withdrawalRequests.some(r => r.user_id === currentUser.id && r.status === 'pending')) {
             addNotification('لا يمكن إنشاء طلب سحب حاليًا.');
             return;
@@ -359,6 +420,7 @@ const App: React.FC = () => {
             wallet_type: walletType,
             wallet_number: walletNumber,
         };
+        await firebaseService.createWithdrawalRequest(newRequest);
         setWithdrawalRequests(prev => [newRequest, ...prev]);
         addNotification('تم إرسال طلب سحب الأرباح بنجاح');
     };
@@ -468,6 +530,7 @@ const App: React.FC = () => {
                     hasPendingWithdrawal={withdrawalRequests.some(r => r.user_id === currentUser?.id && r.status === 'pending')}
                     isLoadingWithdrawals={false}
                     onNavigateToWithdrawals={() => handleMainViewChange('financial')}
+                    onLogout={handleLogout}
                 />;
             case 'financial':
                 return <WithdrawalsPage 
@@ -617,6 +680,18 @@ const App: React.FC = () => {
         postponed: 'مؤجل',
         partially_delivered: 'واصل جزئي',
     };
+
+    if (isAuthChecking) {
+        return (
+            <div className="h-screen w-screen bg-white dark:bg-slate-900 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
+
+    if (!currentUser) {
+        return <AuthPage addNotification={addNotification} />;
+    }
 
     return (
         <div className="h-screen w-screen max-w-lg mx-auto bg-white dark:bg-slate-900 flex flex-col font-cairo" dir="rtl">

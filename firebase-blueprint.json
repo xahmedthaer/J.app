@@ -1,0 +1,195 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "store_name": { "type": "string" },
+        "wallet_type": { "type": "string", "enum": ["زين كاش", "كي كارد", "اخرى"] },
+        "wallet_number": { "type": "string" },
+        "is_admin": { "type": "boolean" },
+        "registration_date": { "type": "string" },
+        "permissions": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["id", "name", "email", "is_admin"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Product listing",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "brand": { "type": "string" },
+        "price": { "type": "number" },
+        "supplierPrice": { "type": "number" },
+        "supplierId": { "type": "string" },
+        "min_sell_price": { "type": "number" },
+        "max_sell_price": { "type": "number" },
+        "promo": { "type": "string" },
+        "description": { "type": "string" },
+        "marketing_description": { "type": "string" },
+        "image_urls": { "type": "array", "items": { "type": "string" } },
+        "series_count": { "type": "number" },
+        "series_sizes": { "type": "string" },
+        "stock": { "type": "number" },
+        "stock_by_size": { "type": "object" },
+        "category": { "type": "string" },
+        "subcategory": { "type": "string" },
+        "created_at": { "type": "string" },
+        "telegramUrl": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["id", "name", "price", "min_sell_price", "max_sell_price", "category"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer order",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "user_id": { "type": "string" },
+        "items": { "type": "array" },
+        "customer": { "$ref": "#/entities/Customer" },
+        "total_cost": { "type": "number" },
+        "profit": { "type": "number" },
+        "delivery_fee": { "type": "number" },
+        "discount": { "type": "number" },
+        "status": { "type": "string", "enum": ["under_implementation", "shipped", "completed", "cancelled", "rejected", "prepared", "postponed", "partially_delivered"] },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "created_at": { "type": "string" },
+        "admin_note": { "type": "string" },
+        "service_fee": { "type": "number" }
+      },
+      "required": ["id", "user_id", "items", "customer", "total_cost", "profit", "status", "created_at"]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "Customer record for a user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "user_id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" },
+        "governorate": { "type": "string" },
+        "region": { "type": "string" },
+        "notes": { "type": "string" }
+      },
+      "required": ["id", "user_id", "name", "phone"]
+    },
+    "WithdrawalRequest": {
+      "title": "WithdrawalRequest",
+      "description": "Financial withdrawal request",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "user_id": { "type": "string" },
+        "amount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "completed"] },
+        "request_date": { "type": "string" },
+        "created_at": { "type": "string" },
+        "processed_date": { "type": "string" },
+        "wallet_type": { "type": "string" },
+        "wallet_number": { "type": "string" }
+      },
+      "required": ["id", "user_id", "amount", "status", "wallet_type", "wallet_number"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Product category",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "parentId": { "type": "string" }
+      },
+      "required": ["id", "name", "imageUrl"]
+    },
+    "SiteSettings": {
+      "title": "SiteSettings",
+      "description": "Global application settings",
+      "type": "object",
+      "properties": {
+        "promoCard": { "type": "object" },
+        "support_info": { "type": "object" },
+        "banners": { "type": "array" },
+        "privacyPolicy": { "type": "string" },
+        "termsAndConditions": { "type": "string" },
+        "serviceFeesDescription": { "type": "string" }
+      }
+    },
+    "Ticket": {
+      "title": "Ticket",
+      "description": "Support ticket",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "order_id": { "type": "string" },
+        "user_id": { "type": "string" },
+        "user_name": { "type": "string" },
+        "customer_name": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "resolved"] },
+        "created_at": { "type": "string" },
+        "messages": { "type": "array" }
+      },
+      "required": ["id", "order_id", "user_id", "status", "created_at", "messages"]
+    },
+    "FaqItem": {
+      "title": "FaqItem",
+      "description": "FAQ entry",
+      "type": "object",
+      "properties": {
+        "question": { "type": "string" },
+        "answer": { "type": "string" }
+      },
+      "required": ["question", "answer"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "User profile documents"
+    },
+    "products/{productId}": {
+      "schema": "Product",
+      "description": "Product catalog"
+    },
+    "orders/{orderId}": {
+      "schema": "Order",
+      "description": "Orders submitted by users"
+    },
+    "customers/{customerId}": {
+      "schema": "Customer",
+      "description": "Customer list managed by users"
+    },
+    "withdrawal_requests/{requestId}": {
+      "schema": "WithdrawalRequest",
+      "description": "Withdrawal requests for earnings"
+    },
+    "categories/{categoryId}": {
+      "schema": "Category",
+      "description": "Product categories"
+    },
+    "settings/global": {
+      "schema": "SiteSettings",
+      "description": "Global site settings"
+    },
+    "faq/{faqId}": {
+      "schema": "FaqItem",
+      "description": "Frequently asked questions"
+    },
+    "tickets/{ticketId}": {
+      "schema": "Ticket",
+      "description": "Support tickets"
+    }
+  }
+}

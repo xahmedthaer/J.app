@@ -1,0 +1,160 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 3. Primitive Definitions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Admin check: checks if user is admin in users collection OR matches specific bootstrap email
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'Xahmedthaer@gmail.com' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.is_admin == true
+      );
+    }
+
+    // 2. Validation Blueprints
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['id', 'name', 'email', 'is_admin']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.name is string && data.name.size() <= 100 &&
+             data.email is string && data.email.size() <= 100 &&
+             data.is_admin is bool &&
+             (data.keys().size() <= 12); // Allowing optional fields like phone, store_name, etc.
+    }
+
+    function isValidProduct(data) {
+      return data.keys().hasAll(['id', 'name', 'price', 'min_sell_price', 'max_sell_price', 'category']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.name is string && data.name.size() <= 200 &&
+             data.price is number && data.price >= 0 &&
+             data.min_sell_price is number && data.min_sell_price >= 0 &&
+             data.max_sell_price is number && data.max_sell_price >= 0 &&
+             data.category is string &&
+             (data.keys().size() <= 30);
+    }
+
+    function isValidOrder(data) {
+      return data.keys().hasAll(['id', 'user_id', 'items', 'customer', 'total_cost', 'profit', 'status', 'created_at']) &&
+             data.id is string &&
+             data.user_id == request.auth.uid &&
+             data.items is list && data.items.size() > 0 &&
+             data.customer is map &&
+             data.total_cost is number &&
+             data.profit is number &&
+             data.status in ['under_implementation', 'shipped', 'completed', 'cancelled', 'rejected', 'prepared', 'postponed', 'partially_delivered'] &&
+             data.created_at is string;
+    }
+
+    function isValidCustomer(data) {
+      return data.keys().hasAll(['id', 'user_id', 'name', 'phone']) &&
+             data.id is string &&
+             data.user_id == request.auth.uid &&
+             data.name is string && data.name.size() <= 100 &&
+             data.phone is string && data.phone.size() <= 20;
+    }
+
+    function isValidWithdrawal(data) {
+      return data.keys().hasAll(['id', 'user_id', 'amount', 'status', 'wallet_type', 'wallet_number']) &&
+             data.id is string &&
+             data.user_id == request.auth.uid &&
+             data.amount is number && data.amount > 0 &&
+             data.status == 'pending' &&
+             data.wallet_type is string &&
+             data.wallet_number is string;
+    }
+
+    // --- Collections ---
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) && isValidUser(incoming()) && incoming().is_admin == false; // Regular user can't make self admin
+      allow update: if (isOwner(userId) || isAdmin()) && isValidUser(incoming()) && 
+                    (isAdmin() || (incoming().is_admin == existing().is_admin)); // Only admin can change admin status
+    }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidProduct(incoming()) && isValidId(productId);
+      allow delete: if isAdmin();
+    }
+
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidId(categoryId);
+    }
+
+    match /orders/{orderId} {
+      // Secure List Query: Must filter by user_id
+      allow list: if isSignedIn() && (resource.data.user_id == request.auth.uid || isAdmin());
+      allow get: if isSignedIn() && (resource.data.user_id == request.auth.uid || isAdmin()) && isValidId(orderId);
+      
+      allow create: if isSignedIn() && isValidOrder(incoming()) && isValidId(orderId);
+      
+      allow update: if isSignedIn() && (
+        // User updating specific fields (only if not terminal)
+        (resource.data.user_id == request.auth.uid && existing().status == 'under_implementation' && 
+         incoming().diff(existing()).affectedKeys().hasOnly(['admin_note'])) || // Example: user can add note? (Maybe not even that)
+        
+        // Admin updating status and notes
+        (isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'admin_note', 'profit', 'delivery_fee', 'discount', 'service_fee']))
+      );
+    }
+
+    match /customers/{customerId} {
+      allow list: if isSignedIn() && (resource.data.user_id == request.auth.uid || isAdmin());
+      allow get: if isSignedIn() && (resource.data.user_id == request.auth.uid || isAdmin()) && isValidId(customerId);
+      allow create, update: if isOwner(incoming().user_id) && isValidCustomer(incoming()) && isValidId(customerId);
+      allow delete: if isSignedIn() && (get(/databases/$(database)/documents/customers/$(customerId)).data.user_id == request.auth.uid || isAdmin());
+    }
+
+    match /withdrawal_requests/{requestId} {
+      allow list: if isSignedIn() && (resource.data.user_id == request.auth.uid || isAdmin());
+      allow get: if isSignedIn() && (resource.data.user_id == request.auth.uid || isAdmin()) && isValidId(requestId);
+      allow create: if isSignedIn() && isValidWithdrawal(incoming()) && isValidId(requestId);
+      allow update: if isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'processed_date']);
+    }
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /faq/{faqId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /tickets/{ticketId} {
+      allow list: if isSignedIn() && (resource.data.user_id == request.auth.uid || isAdmin());
+      allow get: if isSignedIn() && (resource.data.user_id == request.auth.uid || isAdmin()) && isValidId(ticketId);
+      allow create: if isSignedIn() && incoming().user_id == request.auth.uid && isValidId(ticketId);
+      allow update: if isSignedIn() && (resource.data.user_id == request.auth.uid || isAdmin()) && 
+                    incoming().diff(existing()).affectedKeys().hasOnly(['messages', 'status']);
+    }
+  }
+}

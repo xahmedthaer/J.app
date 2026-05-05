@@ -21,7 +21,7 @@ const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({ productToEd
   // Stock Configuration
   const [seriesCount, setSeriesCount] = useState<number>(1);
   const [seriesSizes, setSeriesSizes] = useState('');
-  const [stock, setStock] = useState<number>(0); // Total Piece Stock (Manual fallback)
+  const [stock, setStock] = useState<number>(0); // Total Piece Stock
   const [stockBySize, setStockBySize] = useState<Record<string, number>>({});
 
   // Pricing
@@ -76,7 +76,7 @@ const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({ productToEd
       setTags(productToEdit.tags || []);
       
       // Load Piece Data
-      setSeriesCount(productToEdit.series_count || 1);
+      setSeriesCount(1); // Enforce single piece logic
       setSeriesSizes(productToEdit.series_sizes || '');
       setStock(productToEdit.stock || 0);
       setStockBySize(productToEdit.stock_by_size || {});
@@ -238,8 +238,7 @@ const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({ productToEd
         telegramUrl,
         tags,
         details: Object.keys(detailsObject).length > 0 ? detailsObject : undefined,
-        // Series Data
-        series_count: seriesCount,
+        series_count: 1, // Enforce single piece logic
         series_sizes: seriesSizes,
         stock: totalStock,
         stock_by_size: Object.keys(stockBySize).length > 0 ? stockBySize : undefined
@@ -316,7 +315,7 @@ const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({ productToEd
             
             <div className="space-y-4">
                 <div>
-                    <label className="text-xs font-bold text-blue-700 dark:text-blue-300 block text-right mb-1">القياسات المتوفرة (افصل بينها بفاصلة)</label>
+                    <label className="text-xs font-bold text-blue-700 dark:text-blue-300 block text-right mb-1">القياسات المتوفرة للقطعة (افصل بينها بفاصلة)</label>
                     <input 
                         type="text" 
                         placeholder="مثال: S, M, L, XL" 

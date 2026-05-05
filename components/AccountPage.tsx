@@ -2,7 +2,7 @@
 import React from 'react';
 import { 
     WalletIcon, ChartUpIcon, PencilIcon, 
-    QuestionIcon, ChevronLeftIcon, GaugeHighIcon, ChartPieIcon,
+    QuestionIcon, ChevronLeftIcon, GaugeHighIcon,
     ShieldIcon, MoneyCheckDollarIcon, BookmarkOutlineIcon
 } from './icons';
 import { AccountSubPageView } from '../App';
@@ -39,13 +39,12 @@ interface AccountPageProps {
     hasPendingWithdrawal: boolean;
     isLoadingWithdrawals: boolean;
     onNavigateToWithdrawals: () => void;
+    onLogout: () => void;
 }
 
-const AccountPage: React.FC<AccountPageProps> = ({ onMenuClick, currentUser, realizedBalance, pendingProfit, hasPendingWithdrawal, isLoadingWithdrawals, onNavigateToWithdrawals }) => {
+const AccountPage: React.FC<AccountPageProps> = ({ onMenuClick, currentUser, realizedBalance, pendingProfit, hasPendingWithdrawal, isLoadingWithdrawals, onNavigateToWithdrawals, onLogout }) => {
     return (
         <div className="p-4 space-y-4">
-            {/* تم حذف حقل الاسم والايميل من هنا بناءً على الطلب */}
-
             {/* EARNINGS CARD */}
             <div className="bg-white dark:bg-gray-800 rounded-3xl p-3 border border-gray-200/80 dark:border-gray-700/80">
                 <div className="flex gap-3">
@@ -84,6 +83,7 @@ const AccountPage: React.FC<AccountPageProps> = ({ onMenuClick, currentUser, rea
                 {menuItems.map(item => (
                     <MenuItem key={item.label} icon={item.icon} label={item.label} onClick={() => onMenuClick(item.view)} />
                 ))}
+                <MenuItem icon={() => <i className="fa-solid fa-right-from-bracket rotate-180"></i>} label="تسجيل الخروج" onClick={onLogout} isLogout={true} />
             </div>
         </div>
     );

@@ -5,7 +5,6 @@ import { SearchIcon, EditIcon, TrashIcon, AvatarIcon, UserPlusIcon, PlusIcon, XM
 import { Customer, Product, User, Order, WithdrawalRequest, FaqItem, SiteSettings, SupportInfo, Category, Ticket, TicketMessage, Coupon, Supplier, SupplierWithdrawal, AppNotification, AdminView } from '../types';
 import ProductCard from './ProductCard';
 import AdminDashboardPage from './AdminDashboardPage';
-import AdminStatisticsView from './AdminStatisticsView';
 import SearchBar from './SearchBar';
 import MyTicketsPage from './MyTicketsPage';
 

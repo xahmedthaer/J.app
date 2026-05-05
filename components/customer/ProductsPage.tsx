@@ -113,7 +113,7 @@ const SizeSelectionModal: React.FC<SizeSelectionModalProps> = ({ product, onClos
                                     >
                                         {size}
                                         {!available && (
-                                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] px-1 rounded-full border border-white">نفذ</span>
+                                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] px-1 rounded-full border border-white">غير متوفر</span>
                                         )}
                                     </button>
                                 );
@@ -139,7 +139,7 @@ const SizeSelectionModal: React.FC<SizeSelectionModalProps> = ({ product, onClos
                         className="w-full h-16 bg-primary text-white font-black rounded-[24px] shadow-xl shadow-primary/30 flex items-center justify-center gap-3 disabled:bg-gray-300 active:scale-95 transition-all mb-4"
                     >
                         <CartIcon className="w-6 h-6" />
-                        <span>{currentStock > 0 ? (selectedSize ? 'أضف للسلة' : 'اختر القياس أولاً') : 'نفذت الكمية'}</span>
+                        <span>{product.stock > 0 ? (selectedSize ? 'أضف للسلة' : 'اختر القياس أولاً') : 'غير متوفر حالياً'}</span>
                     </button>
                 </div>
             </div>
