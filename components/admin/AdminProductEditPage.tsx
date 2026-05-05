@@ -18,13 +18,14 @@ const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({ productToEd
   const [name, setName] = useState('');
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   
-  // Series Configuration
-  const [seriesCount, setSeriesCount] = useState<number>(0);
+  // Stock Configuration
+  const [seriesCount, setSeriesCount] = useState<number>(1);
   const [seriesSizes, setSeriesSizes] = useState('');
-  const [stock, setStock] = useState<number>(0); // Total Series Stock
+  const [stock, setStock] = useState<number>(0); // Total Piece Stock (Manual fallback)
+  const [stockBySize, setStockBySize] = useState<Record<string, number>>({});
 
   // Pricing
-  const [price, setPrice] = useState<number>(0); // Wholesale Price
+  const [price, setPrice] = useState<number>(0); // Piece Wholesale Price
   const [minSellPrice, setMinSellPrice] = useState<number>(0);
   const [maxSellPrice, setMaxSellPrice] = useState<number>(0);
   
@@ -38,13 +39,19 @@ const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({ productToEd
   const [detailsList, setDetailsList] = useState<{key: string, value: string}[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   
+  // Parse sizes for easier stock management
+  const sizesList = useMemo(() => {
+    return seriesSizes.split(',').map(s => s.trim()).filter(Boolean);
+  }, [seriesSizes]);
+
   // Derived Calculations
-  const costPerPiece = useMemo(() => {
-      if (seriesCount > 0 && price > 0) {
-          return Math.round(price / seriesCount);
+  const totalStock = useMemo(() => {
+      // If we have sizes listed, use the sum of stockBySize
+      if (sizesList.length > 0) {
+          return sizesList.reduce((sum, size) => sum + (stockBySize[size] || 0), 0);
       }
-      return 0;
-  }, [price, seriesCount]);
+      return stock;
+  }, [sizesList, stockBySize, stock]);
 
   const minProfit = useMemo(() => {
       if (minSellPrice > 0 && price > 0) {
@@ -68,10 +75,11 @@ const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({ productToEd
       setTelegramUrl(productToEdit.telegramUrl || '');
       setTags(productToEdit.tags || []);
       
-      // Load Series Data
-      setSeriesCount(productToEdit.series_count || 0);
+      // Load Piece Data
+      setSeriesCount(productToEdit.series_count || 1);
       setSeriesSizes(productToEdit.series_sizes || '');
       setStock(productToEdit.stock || 0);
+      setStockBySize(productToEdit.stock_by_size || {});
 
       // Convert details object to array
       if (productToEdit.details) {
@@ -96,12 +104,17 @@ const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({ productToEd
       setTelegramUrl('');
       setTags([]);
       
-      setSeriesCount(0);
+      setSeriesCount(1);
       setSeriesSizes('');
       setStock(0);
+      setStockBySize({});
       setDetailsList([{key: '', value: ''}]);
     }
   }, [productToEdit]);
+
+  const handleStockBySizeChange = (size: string, val: number) => {
+    setStockBySize(prev => ({ ...prev, [size]: val }));
+  };
 
   useEffect(() => {
     setHeaderConfig({
@@ -196,9 +209,9 @@ const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({ productToEd
         return;
     }
 
-    // Series Validation
+    // Stock Validation
     if (seriesCount <= 0 || !seriesSizes || stock < 0) {
-        alert('يرجى تعبئة تفاصيل السيرية (العدد، القياسات، والمخزون) بشكل صحيح.');
+        alert('يرجى تعبئة تفاصيل المنتج (القياسات والمخزون) بشكل صحيح.');
         return;
     }
 
@@ -228,7 +241,8 @@ const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({ productToEd
         // Series Data
         series_count: seriesCount,
         series_sizes: seriesSizes,
-        stock: stock
+        stock: totalStock,
+        stock_by_size: Object.keys(stockBySize).length > 0 ? stockBySize : undefined
     };
 
     if (productToEdit) {
@@ -291,30 +305,53 @@ const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({ productToEd
             </div>
         </div>
 
-        {/* SECTION 2: SERIES CONFIGURATION (THE CORE) */}
+        {/* SECTION 2: STOCK & SIZES */}
         <div className="bg-blue-50 dark:bg-blue-900/10 rounded-2xl border border-blue-200 dark:border-blue-800 p-4">
             <div className="flex justify-between items-center mb-4 border-b border-blue-200 dark:border-blue-800 pb-2">
                 <label className="text-base font-extrabold text-blue-800 dark:text-blue-300 flex items-center gap-2">
                     <CubesStackIcon className="w-5 h-5" />
-                    تكوين السيرية (الباكيت)
+                    المخزون والقياسات
                 </label>
             </div>
             
             <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="text-xs font-bold text-blue-700 dark:text-blue-300 block text-right mb-1">عدد القطع في السيرية</label>
-                        <input 
-                            type="number" 
-                            value={seriesCount || ''} 
-                            onChange={e => setSeriesCount(Number(e.target.value))} 
-                            className="w-full p-3 border border-blue-200 dark:border-blue-700 rounded-xl text-center bg-white dark:bg-gray-800 dark:text-white font-extrabold text-lg focus:ring-2 focus:ring-blue-400 outline-none" 
-                            min="1"
-                            placeholder="0"
-                        />
+                <div>
+                    <label className="text-xs font-bold text-blue-700 dark:text-blue-300 block text-right mb-1">القياسات المتوفرة (افصل بينها بفاصلة)</label>
+                    <input 
+                        type="text" 
+                        placeholder="مثال: S, M, L, XL" 
+                        value={seriesSizes} 
+                        onChange={e => setSeriesSizes(e.target.value)} 
+                        className="w-full p-3 border border-blue-200 dark:border-blue-700 rounded-xl text-right bg-white dark:bg-gray-800 dark:text-white placeholder:text-gray-400 focus:ring-2 focus:ring-blue-400 outline-none font-bold" 
+                    />
+                </div>
+
+                {sizesList.length > 0 ? (
+                    <div className="bg-white/50 dark:bg-gray-800/30 p-4 rounded-2xl border border-blue-100 dark:border-blue-900/50">
+                        <label className="text-xs font-black text-blue-800 dark:text-blue-300 block text-right mb-3">توزيع المخزون حسب القياس</label>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            {sizesList.map(size => (
+                                <div key={size} className="flex flex-col gap-1">
+                                    <span className="text-[10px] font-black text-gray-500 text-center">{size}</span>
+                                    <input 
+                                        type="number" 
+                                        min="0"
+                                        placeholder="0"
+                                        value={stockBySize[size] || ''} 
+                                        onChange={e => handleStockBySizeChange(size, Number(e.target.value))}
+                                        className="w-full p-2 border border-blue-100 dark:border-gray-700 rounded-lg text-center bg-white dark:bg-gray-700 dark:text-white font-bold text-sm focus:ring-2 focus:ring-blue-400 outline-none"
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                        <div className="mt-4 pt-3 border-t border-blue-100 dark:border-blue-900/50 flex justify-between items-center text-blue-900 dark:text-blue-200">
+                            <span className="text-lg font-black">{totalStock}</span>
+                            <span className="text-[10px] font-black">إجمالي المخزون:</span>
+                        </div>
                     </div>
+                ) : (
                     <div>
-                        <label className="text-xs font-bold text-blue-700 dark:text-blue-300 block text-right mb-1">المخزون (عدد السيريات)</label>
+                        <label className="text-sm font-bold text-blue-700 dark:text-blue-300 block text-right mb-1">إجمالي المخزون (عدد القطع المتوفرة)</label>
                         <input 
                             type="number" 
                             value={stock || ''} 
@@ -324,18 +361,7 @@ const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({ productToEd
                             placeholder="0"
                         />
                     </div>
-                </div>
-
-                <div>
-                    <label className="text-xs font-bold text-blue-700 dark:text-blue-300 block text-right mb-1">وصف القياسات داخل السيرية</label>
-                    <input 
-                        type="text" 
-                        placeholder="مثال: S:2, M:4, L:4, XL:2" 
-                        value={seriesSizes} 
-                        onChange={e => setSeriesSizes(e.target.value)} 
-                        className="w-full p-3 border border-blue-200 dark:border-blue-700 rounded-xl text-right bg-white dark:bg-gray-800 dark:text-white placeholder:text-gray-400 focus:ring-2 focus:ring-blue-400 outline-none" 
-                    />
-                </div>
+                )}
             </div>
         </div>
 
@@ -343,30 +369,22 @@ const AdminProductEditPage: React.FC<AdminProductEditPageProps> = ({ productToEd
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
             <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-4 border-b dark:border-gray-700 pb-2 flex items-center gap-2">
                 <CalculatorIcon className="w-5 h-5 text-green-500" />
-                التسعير والأرباح
+                التسعير والأرباح (للقطعة الواحدة)
             </h3>
 
             <div className="space-y-4">
-                {/* Wholesale & Cost Per Piece */}
-                <div className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-700/30 p-3 rounded-xl">
-                    <div>
-                        <label className="text-xs font-bold text-gray-600 dark:text-gray-300 block text-right mb-1">سعر الجملة (للسيرية)</label>
-                        <input 
-                            type="number" 
-                            placeholder="0" 
-                            value={price || ''} 
-                            onChange={e => handlePriceChange('price', Number(e.target.value))} 
-                            required 
-                            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl text-center bg-white dark:bg-gray-800 dark:text-white font-extrabold text-lg focus:ring-2 focus:ring-primary outline-none" 
-                            min="0" 
-                        />
-                    </div>
-                    <div className="flex flex-col justify-center items-center opacity-70">
-                        <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400">تكلفة القطعة الواحدة (تقريبي)</span>
-                        <div className="text-xl font-bold text-gray-700 dark:text-gray-300 dir-ltr">
-                            {costPerPiece.toLocaleString()} <span className="text-xs">د.ع</span>
-                        </div>
-                    </div>
+                {/* Wholesale Price */}
+                <div className="bg-gray-50 dark:bg-gray-700/30 p-3 rounded-xl">
+                    <label className="text-xs font-bold text-gray-600 dark:text-gray-300 block text-right mb-1">سعر الجملة للقطعة الواحدة</label>
+                    <input 
+                        type="number" 
+                        placeholder="0" 
+                        value={price || ''} 
+                        onChange={e => handlePriceChange('price', Number(e.target.value))} 
+                        required 
+                        className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl text-center bg-white dark:bg-gray-800 dark:text-white font-extrabold text-lg focus:ring-2 focus:ring-primary outline-none" 
+                        min="0" 
+                    />
                 </div>
 
                 {/* Selling Range */}

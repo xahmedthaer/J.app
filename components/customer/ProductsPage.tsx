@@ -12,11 +12,33 @@ interface SizeSelectionModalProps {
 
 const SizeSelectionModal: React.FC<SizeSelectionModalProps> = ({ product, onClose, onAddToCart }) => {
     const [quantity, setQuantity] = useState(1);
-    const currentStock = product.stock;
-    const isBundle = product.name.includes("بكج") || product.tags?.includes("bundle") || false;
+    const [selectedSize, setSelectedSize] = useState<string | null>(null);
+    
+    // Parse sizes from comma separated string
+    const availableSizes = useMemo(() => {
+        return product.series_sizes.split(',').map(s => s.trim()).filter(Boolean);
+    }, [product.series_sizes]);
+
+    const isSizeAvailable = (size: string) => {
+        // If we have size-specific stock, check it
+        if (product.stock_by_size && product.stock_by_size[size] !== undefined) {
+            return product.stock_by_size[size] > 0;
+        }
+        // Otherwise use total stock
+        return product.stock > 0;
+    };
+
+    // Auto-select first available size
+    useEffect(() => {
+        const firstAvailable = availableSizes.find(size => isSizeAvailable(size));
+        if (firstAvailable) {
+            setSelectedSize(firstAvailable);
+        }
+    }, [availableSizes]);
 
     const handleAddToCart = () => {
-        const sizeName = isBundle ? `بكج ألوان مختلطة (3 سيريات)` : `سيرية (${product.series_count} قطع)`;
+        if (!selectedSize) return;
+        const sizeName = `قطعة واحدة (${selectedSize})`;
         for(let i=0; i<quantity; i++) {
             onAddToCart(product, sizeName);
         }
@@ -25,10 +47,17 @@ const SizeSelectionModal: React.FC<SizeSelectionModalProps> = ({ product, onClos
 
     const handleQuantityChange = (delta: number) => {
         const newQty = quantity + delta;
-        if (newQty >= 1 && newQty <= currentStock) {
+        // Limit quantity by selected size stock if available, else total stock
+        const maxStock = (product.stock_by_size && selectedSize) 
+            ? Math.min(product.stock_by_size[selectedSize] || 0, product.stock)
+            : product.stock;
+            
+        if (newQty >= 1 && newQty <= maxStock) {
             setQuantity(newQty);
         }
     };
+
+    const currentStock = product.stock;
 
     return (
         <div className="fixed inset-0 z-[100] flex justify-center items-end sm:items-center" role="dialog" aria-modal="true">
@@ -49,67 +78,68 @@ const SizeSelectionModal: React.FC<SizeSelectionModalProps> = ({ product, onClos
                         <div className="flex-grow pt-2">
                              <h3 className="font-black text-gray-900 dark:text-white text-lg leading-snug line-clamp-2">{product.name}</h3>
                             <div className="mt-2 flex items-center justify-end gap-2">
-                                <span className="text-[10px] text-gray-400 font-bold">سعر الجملة:</span>
                                 <div className="text-primary dark:text-primary-light font-black text-xl dir-ltr">
                                     {product.price.toLocaleString()} <span className="text-[10px]">د.ع</span>
                                 </div>
+                                <span className="text-[10px] text-gray-400 font-bold">:سعر القطعة</span>
                             </div>
                         </div>
                     </div>
 
                     <div className="h-px bg-slate-100 dark:bg-gray-800 w-full"></div>
 
-                    {/* Preparation Details Block */}
+                    {/* Size Selection Block */}
                     <div className="bg-slate-50 dark:bg-gray-800/60 p-5 rounded-[32px] border border-slate-100 dark:border-gray-700">
                         <div className="flex items-center gap-2 mb-4 justify-end">
-                            <h4 className="font-black text-gray-800 dark:text-gray-200 text-xs">تفاصيل المحتوى</h4>
-                            <BoxOpenIcon className="w-4 h-4 text-primary" />
+                            <h4 className="font-black text-gray-800 dark:text-gray-200 text-xs">اختر القياس المطلوب</h4>
+                            <CubesStackIcon className="w-4 h-4 text-primary" />
                         </div>
 
-                        {isBundle ? (
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between bg-white dark:bg-gray-700 p-3 rounded-2xl shadow-sm border border-slate-50 dark:border-gray-600">
-                                    <span className="text-xs font-bold text-green-600">3 سيريات</span>
-                                    <span className="text-xs font-black text-gray-600 dark:text-gray-300">ألوان مختلفة</span>
-                                </div>
-                                <div className="flex items-center justify-between px-1">
-                                    <span className="text-[10px] font-bold text-gray-400">القياسات</span>
-                                    <span className="text-[10px] font-black text-gray-700 dark:text-gray-200">{product.series_sizes}</span>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between bg-white dark:bg-gray-700 p-3 rounded-2xl shadow-sm border border-slate-50 dark:border-gray-600">
-                                    <span className="text-xs font-black text-primary">{product.series_count} قطع</span>
-                                    <span className="text-xs font-black text-gray-600 dark:text-gray-300">محتويات السيرية</span>
-                                </div>
-                                <div className="flex items-center justify-between px-1">
-                                    <span className="text-[10px] font-bold text-gray-400">القياسات</span>
-                                    <span className="text-[10px] font-black text-gray-700 dark:text-gray-200">{product.series_sizes}</span>
-                                </div>
-                            </div>
-                        )}
+                        <div className="grid grid-cols-4 gap-2">
+                            {availableSizes.map((size) => {
+                                const available = isSizeAvailable(size);
+                                return (
+                                    <button
+                                        key={size}
+                                        onClick={() => available && setSelectedSize(size)}
+                                        disabled={!available}
+                                        className={`h-12 rounded-xl flex items-center justify-center font-bold text-sm transition-all border
+                                            ${selectedSize === size 
+                                                ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20 scale-105' 
+                                                : available 
+                                                    ? 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-slate-100 dark:border-gray-600 hover:border-primary' 
+                                                    : 'bg-gray-100 dark:bg-gray-800 text-gray-400 border-gray-100 dark:border-gray-700 cursor-not-allowed opacity-50 relative'
+                                            }`}
+                                    >
+                                        {size}
+                                        {!available && (
+                                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] px-1 rounded-full border border-white">نفذ</span>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
                         
-                        <div className="mt-4 pt-4 border-t border-slate-200 dark:border-gray-700 flex justify-between items-center">
+                        <div className="mt-6 pt-4 border-t border-slate-200 dark:border-gray-700 flex justify-between items-center">
                             <div className="flex items-center bg-white dark:bg-gray-700 rounded-2xl shadow-sm border border-slate-100 dark:border-gray-600 p-1.5">
                                 <button onClick={() => handleQuantityChange(1)} className="w-9 h-9 rounded-xl flex items-center justify-center text-primary active:scale-90 transition-all"><PlusIcon className="w-4 h-4" /></button>
                                 <div className="w-8 text-center font-black text-gray-800 dark:text-white text-lg">{quantity}</div>
                                 <button onClick={() => handleQuantityChange(-1)} className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-400 active:scale-90 transition-all"><MinusIcon className="w-4 h-4" /></button>
                             </div>
                             <div className="text-right">
-                                <span className="text-[10px] font-black text-gray-400 block">{isBundle ? 'عدد البكجات' : 'عدد السيريات'}</span>
-                                <span className="text-xs font-black text-gray-700 dark:text-gray-200">الكمية المطلوبة</span>
+                                <span className="text-[10px] font-black text-gray-400 block">الكمية (قطعة)</span>
+                                <span className="text-xs font-black text-gray-700 dark:text-gray-200">العدد المطلوب</span>
                             </div>
                         </div>
                     </div>
 
                     <button 
                         onClick={handleAddToCart} 
-                        disabled={currentStock === 0} 
+                        disabled={!selectedSize || currentStock === 0} 
                         className="w-full h-16 bg-primary text-white font-black rounded-[24px] shadow-xl shadow-primary/30 flex items-center justify-center gap-3 disabled:bg-gray-300 active:scale-95 transition-all mb-4"
                     >
                         <CartIcon className="w-6 h-6" />
-                        <span>{currentStock > 0 ? (isBundle ? 'أضف البكج للسلة' : 'أضف السيرية للسلة') : 'نفذت الكمية'}</span>
+                        <span>{currentStock > 0 ? (selectedSize ? 'أضف للسلة' : 'اختر القياس أولاً') : 'نفذت الكمية'}</span>
                     </button>
                 </div>
             </div>

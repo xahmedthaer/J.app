@@ -3,20 +3,21 @@ export interface Product {
   id: string;
   name: string;
   brand: string;
-  price: number; // Wholesale price (Per Series)
-  supplierPrice?: number; // Cost price from supplier (Per Series)
+  price: number; // Wholesale price (Per Piece)
+  supplierPrice?: number; // Cost price from supplier (Per Piece)
   supplierId?: string;
-  min_sell_price: number; // Per Series
-  max_sell_price: number; // Per Series
+  min_sell_price: number; // Per Piece
+  max_sell_price: number; // Per Piece
   promo: string;
   description: string;
   marketing_description?: string;
   image_urls: string[];
   
-  // Flattened Series Data (Since it's the only mode now)
-  series_count: number; // Number of pieces in one series
-  series_sizes: string; // e.g., "S, M, L, XL, XXL"
-  stock: number; // How many full series are available
+  // Product Details
+  series_count: number; // Default to 1 for single piece logic
+  series_sizes: string; // Available sizes for this piece (e.g., "S, M, L, XL")
+  stock: number; // How many pieces are available
+  stock_by_size?: Record<string, number>; // Specific stock for each size
   
   details?: Record<string, string>;
   category: string;

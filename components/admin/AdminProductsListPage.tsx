@@ -53,7 +53,7 @@ const ProductListItem: React.FC<{
         <div>
           <p className={`font-bold text-gray-800 dark:text-gray-100 ${isOutOfStock ? 'text-gray-500 dark:text-gray-400 line-through decoration-red-500/50' : ''}`}>{product.name}</p>
           <p className={`text-sm mt-1 ${isOutOfStock ? 'text-red-500 font-bold' : 'text-gray-500 dark:text-gray-400'}`}>
-            {isOutOfStock ? 'نفذت الكمية' : `متوفر: ${totalStock} سيرية`}
+            {isOutOfStock ? 'نفذت الكمية' : `متوفر: ${totalStock} قطعة`}
           </p>
           <p className="text-sm text-primary dark:text-primary-light font-semibold">سعر جملة: {product.price.toLocaleString()} د.ع</p>
         </div>

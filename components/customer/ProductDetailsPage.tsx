@@ -85,18 +85,37 @@ interface ProductDetailsPageProps {
 
 const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product, onAddToCart, addNotification, isSaved, onSaveToggle }) => {
   const [quantity, setQuantity] = useState(1);
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [currentMainImageIndex, setCurrentMainImageIndex] = useState(0);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+
+  // Parse sizes from comma separated string
+  const availableSizes = useMemo(() => {
+    return product.series_sizes.split(',').map(s => s.trim()).filter(Boolean);
+  }, [product.series_sizes]);
+
+  const isSizeAvailable = (size: string) => {
+    if (product.stock_by_size && product.stock_by_size[size] !== undefined) {
+        return product.stock_by_size[size] > 0;
+    }
+    return product.stock > 0;
+  };
+
+  // Auto-select first available size
+  React.useEffect(() => {
+    const firstAvailable = availableSizes.find(size => isSizeAvailable(size));
+    if (firstAvailable) {
+        setSelectedSize(firstAvailable);
+    }
+  }, [availableSizes]);
   
   // Swipe State
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
-  const isBundle = product.name.includes("بكج") || product.tags?.includes("bundle") || false;
-  const bundleCount = 3; 
-
   const handleAddToCartClick = () => {
-    const sizeName = isBundle ? `بكج ألوان مختلطة (${bundleCount} سيريات)` : `سيرية (${product.series_count} قطع)`;
+    if (!selectedSize) return;
+    const sizeName = `قطعة واحدة (${selectedSize})`;
     for (let i = 0; i < quantity; i++) {
         onAddToCart(product, sizeName);
     }
@@ -104,8 +123,11 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product, onAddT
 
   const handleQuantityChange = (delta: number) => {
       const newQty = quantity + delta;
-      let maxStock = product.stock;
-      if (newQty >= 1 && newQty <= maxStock) {
+      const maxStockForSize = (product.stock_by_size && selectedSize) 
+        ? Math.min(product.stock_by_size[selectedSize] || 0, product.stock)
+        : product.stock;
+
+      if (newQty >= 1 && newQty <= maxStockForSize) {
           setQuantity(newQty);
       }
   };
@@ -168,13 +190,6 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product, onAddT
             onClick={() => setIsGalleryOpen(true)}
           />
           
-          {/* Bundle Badge Overlay */}
-          {isBundle && (
-              <div className="absolute top-6 right-0 bg-primary text-white px-5 py-2 rounded-l-full font-black text-xs shadow-lg animate-pulse">
-                   عرض البكج التوفيري 🔥
-              </div>
-          )}
-
           {/* Pagination Dots */}
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5 bg-black/20 backdrop-blur-md px-3 py-1.5 rounded-full">
               {product.image_urls.map((_, idx) => (
@@ -195,7 +210,7 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product, onAddT
               </h1>
               <div className="flex items-center gap-2 justify-end mt-2">
                  <span className="text-xs font-bold text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">{product.category}</span>
-                 <span className="text-xs font-bold text-primary bg-primary/10 px-3 py-1 rounded-full">{isBundle ? 'نظام بكجات' : 'نظام سيريات'}</span>
+                 <span className="text-xs font-bold text-primary bg-primary/10 px-3 py-1 rounded-full">نظام مفرد</span>
               </div>
           </div>
 
@@ -211,7 +226,7 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product, onAddT
               <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-3xl border border-gray-100 dark:border-gray-700 flex flex-col items-center">
                   <span className="text-[10px] text-gray-400 font-bold mb-1">المخزون المتوفر</span>
                   <p className="text-xl font-black text-gray-800 dark:text-gray-200 dir-ltr">
-                      {product.stock} <span className="text-[10px] font-bold opacity-60">{isBundle ? 'بكج' : 'سيرية'}</span>
+                      {product.stock} <span className="text-[10px] font-bold opacity-60">قطعة</span>
                   </p>
               </div>
           </div>
@@ -229,57 +244,37 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product, onAddT
                   </div>
               </div>
 
-              {/* Card Content - Adaptive */}
+              {/* Card Content (Size Selection) */}
               <div className="space-y-5">
-                  {isBundle ? (
-                      /* Bundle Specific Layout */
-                      <div className="space-y-4">
-                          <div className="flex flex-col gap-3">
-                              <p className="text-xs font-black text-gray-500 text-right">يتكون هذا البكج من {bundleCount} سيريات بالألوان التالية:</p>
-                              <div className="grid grid-cols-1 gap-2">
-                                  {['أسود ملكي', 'أبيض ناصع', 'نيلي غامق'].map((color, idx) => (
-                                      <div key={idx} className="flex items-center justify-between bg-white dark:bg-gray-700 p-3 rounded-2xl border border-slate-100 dark:border-gray-600">
-                                          <CheckCircleIcon className="w-4 h-4 text-green-500" />
-                                          <span className="text-sm font-bold text-gray-700 dark:text-gray-200">{color}</span>
-                                      </div>
-                                  ))}
-                              </div>
-                          </div>
-                          <div className="pt-4 border-t border-slate-100 dark:border-gray-700">
-                              <p className="text-[10px] font-black text-gray-400 text-right mb-2">محتويات كل سيرية داخل البكج:</p>
-                              <div className="flex items-center justify-between">
-                                  <span className="text-xs font-black text-gray-700 dark:text-gray-300">القياسات المتوفرة</span>
-                                  <span className="text-xs font-bold text-primary">{product.series_sizes}</span>
-                              </div>
-                              <div className="flex items-center justify-between mt-2">
-                                  <span className="text-xs font-black text-gray-700 dark:text-gray-300">عدد القطع لكل سيرية</span>
-                                  <span className="text-xs font-bold text-gray-600 dark:text-gray-400">{product.series_count} قطع</span>
-                              </div>
-                          </div>
-                      </div>
-                  ) : (
-                      /* Standard Series Specific Layout */
-                      <div className="space-y-4">
-                          <div className="flex items-center justify-between bg-white dark:bg-gray-700 p-4 rounded-2xl border border-slate-100 dark:border-gray-600">
-                              <div className="text-right">
-                                  <p className="text-[10px] text-gray-400 font-bold mb-1">القياسات المتوفرة بالسيرية</p>
-                                  <p className="text-sm font-black text-primary">{product.series_sizes}</p>
-                              </div>
-                              <div className="w-10 h-10 bg-primary/5 rounded-xl flex items-center justify-center text-primary">
-                                  <CubesStackIcon className="w-5 h-5" />
-                              </div>
-                          </div>
-                          <div className="flex items-center justify-between bg-white dark:bg-gray-700 p-4 rounded-2xl border border-slate-100 dark:border-gray-600">
-                              <div className="text-right">
-                                  <p className="text-[10px] text-gray-400 font-bold mb-1">إجمالي عدد القطع بالسيرية</p>
-                                  <p className="text-sm font-black text-gray-800 dark:text-white">{product.series_count} قطع كاملة</p>
-                              </div>
-                              <div className="w-10 h-10 bg-slate-50 dark:bg-gray-800 rounded-xl flex items-center justify-center text-slate-400">
-                                  <i className="fa-solid fa-layer-group text-sm"></i>
-                              </div>
+                  <div className="space-y-4">
+                      <div className="bg-white dark:bg-gray-700/50 p-4 rounded-3xl border border-slate-100 dark:border-gray-600">
+                          <label className="text-xs font-black text-gray-400 block mb-4 text-right">القياسات المتوفرة</label>
+                          <div className="grid grid-cols-4 gap-3">
+                              {availableSizes.map((size) => {
+                                  const available = isSizeAvailable(size);
+                                  return (
+                                      <button
+                                          key={size}
+                                          onClick={() => available && setSelectedSize(size)}
+                                          disabled={!available}
+                                          className={`h-12 rounded-2xl flex items-center justify-center font-bold text-sm transition-all border
+                                              ${selectedSize === size 
+                                                  ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20 scale-105' 
+                                                  : available 
+                                                      ? 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-slate-100 dark:border-gray-700' 
+                                                      : 'bg-gray-100 dark:bg-gray-800 text-gray-400 border-gray-100 dark:border-gray-700 cursor-not-allowed opacity-50 relative'
+                                              }`}
+                                      >
+                                          {size}
+                                          {!available && (
+                                              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] px-1 rounded-full border border-white">نفذ</span>
+                                          )}
+                                      </button>
+                                  );
+                              })}
                           </div>
                       </div>
-                  )}
+                  </div>
               </div>
 
               {/* Integrated Quantity Controls */}
@@ -291,7 +286,7 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product, onAddT
                            <button onClick={() => handleQuantityChange(-1)} className="w-11 h-11 rounded-2xl bg-white dark:bg-gray-700 text-gray-400 shadow-sm flex items-center justify-center active:scale-90 transition-all border border-slate-100 dark:border-gray-600"><MinusIcon className="w-5 h-5" /></button>
                        </div>
                        <div className="text-right">
-                           <span className="text-xs font-black text-gray-400 block mb-1">{isBundle ? 'عدد البكجات' : 'عدد السيريات'}</span>
+                           <span className="text-xs font-black text-gray-400 block mb-1">عدد القطع</span>
                            <span className="text-sm font-black text-gray-800 dark:text-white">حدد الكمية المطلوبة</span>
                        </div>
                   </div>
@@ -341,12 +336,12 @@ const ProductDetailsPage: React.FC<ProductDetailsPageProps> = ({ product, onAddT
       <div className="fixed bottom-0 left-0 right-0 w-full bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl px-6 py-5 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-10 border-t border-gray-100 dark:border-gray-800">
           <button 
             onClick={handleAddToCartClick}
-            disabled={(product.stock === 0)}
+            disabled={!selectedSize || (product.stock === 0)}
             className="w-full bg-primary text-white active:scale-95 transition-all duration-500 font-black text-base py-4 rounded-[24px] shadow-xl shadow-primary/30 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-3"
           >
               <CartIcon className="w-6 h-6" />
               <span>
-                  {product.stock === 0 ? 'للأسف، نفذت الكمية' : `أضف للسلة • ${displayPrice.toLocaleString()} د.ع`}
+                  {product.stock === 0 ? 'للأسف، نفذت الكمية' : !selectedSize ? 'اختر القياس أولاً' : `أضف للسلة • ${displayPrice.toLocaleString()} د.ع`}
               </span>
           </button>
       </div>
