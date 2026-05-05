@@ -2,10 +2,9 @@ import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 import admin from 'firebase-admin';
 import { getFirestore } from 'firebase-admin/firestore';
-import firebaseConfig from './firebase-applet-config.json' assert { type: 'json' };
-import serviceAccountKey from './firebase-service-account.json' assert { type: 'json' };
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -15,13 +14,40 @@ async function startServer() {
 
   app.use(express.json());
 
+  // Load configs manually to avoid ESM import issues with JSON and enable dynamic updates
+  const rootDir = process.cwd();
+  const firebaseConfigPath = path.join(rootDir, 'firebase-applet-config.json');
+  const serviceAccountPath = path.join(rootDir, 'firebase-service-account.json');
+  
+  let firebaseConfig: any = {};
+  try {
+    if (fs.existsSync(firebaseConfigPath)) {
+      firebaseConfig = JSON.parse(fs.readFileSync(firebaseConfigPath, 'utf8'));
+    } else {
+      console.error("firebase-applet-config.json NOT FOUND at", firebaseConfigPath);
+    }
+  } catch (err) {
+    console.error("Error reading firebase-applet-config.json:", err);
+  }
+
+  let serviceAccount: any = null;
+  try {
+    if (fs.existsSync(serviceAccountPath)) {
+      serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+      console.log("Service account file found and parsed.");
+    } else {
+      console.warn("firebase-service-account.json NOT FOUND at", serviceAccountPath);
+    }
+  } catch (err) {
+    console.error("Error reading firebase-service-account.json:", err);
+    serviceAccount = { error: `Read error: ${err instanceof Error ? err.message : String(err)}` };
+  }
+
   // Explicitly serve public assets (like firebase-messaging-sw.js)
-  app.use(express.static(path.join(__dirname, 'public')));
+  app.use(express.static(path.join(rootDir, 'public')));
 
   // Initialize Firebase Admin
-  let serviceAccount: any = serviceAccountKey;
-  
-  if (admin.apps.length === 0) {
+  if (serviceAccount && !serviceAccount.error && admin.apps.length === 0) {
     try {
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount)
@@ -29,7 +55,22 @@ async function startServer() {
       console.log("Firebase Admin initialized successfully using service account file for project:", serviceAccount.project_id);
     } catch (error) {
       console.error("Failed to initialize Firebase Admin from file:", error);
-      serviceAccount = { ...serviceAccount, error: error instanceof Error ? error.message : String(error) };
+      serviceAccount = { ...serviceAccount, error: `Init error: ${error instanceof Error ? error.message : String(error)}` };
+    }
+  } else if (!serviceAccount || serviceAccount.error) {
+    // Fallback if file missing or errored
+    const serviceAccountEnv = process.env.FIREBASE_SERVICE_ACCOUNT;
+    if (serviceAccountEnv && admin.apps.length === 0) {
+      try {
+        const envAccount = JSON.parse(serviceAccountEnv);
+        admin.initializeApp({
+          credential: admin.credential.cert(envAccount)
+        });
+        serviceAccount = envAccount;
+        console.log("Firebase Admin initialized via environment variable.");
+      } catch (error) {
+        console.error("Failed to initialize Firebase Admin via env:", error);
+      }
     }
   }
 

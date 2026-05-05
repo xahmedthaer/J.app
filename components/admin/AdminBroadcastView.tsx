@@ -93,26 +93,20 @@ const AdminBroadcastView: React.FC<AdminBroadcastViewProps> = ({ onSend }) => {
           <div className="bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800 rounded-xl p-4 mb-6">
             <h3 className="text-red-700 dark:text-red-400 font-bold text-sm mb-2">إعدادات الإشعارات غير مكتملة</h3>
             <p className="text-xs text-red-600 dark:text-red-400 mb-3">
-              لتفعيل الإشعارات الحقيقية، يجب إضافة ملف Service Account من Firebase كمتغير بيئة (Secret).
+              محاولة التهيئة باستخدام ملف <code>firebase-service-account.json</code> فشلت أو الملف غير موجود.
             </p>
             
-            <div className="bg-white/50 dark:bg-black/20 p-3 rounded-lg space-y-2">
-              <p className="text-xs font-bold">الخطوات:</p>
-              <ol className="text-xs list-decimal list-inside space-y-1 text-gray-600 dark:text-gray-400">
-                <li>اذهب إلى إعدادات مشروع Firebase في متصفحك.</li>
-                <li>اذهب إلى <strong>Project Settings</strong> ثم <strong>Service Accounts</strong>.</li>
-                <li>اضغط على <strong>Generate New Private Key</strong> وحمل ملف الـ JSON.</li>
-                <li>افتح الملف وانسخ محتواه بالكامل.</li>
-                <li>في هذا التطبيق (AI Studio)، اذهب إلى <strong>Settings (⚙️)</strong> ثم <strong>Secrets</strong>.</li>
-                <li>أضف مفتاح جديد باسم <strong>FIREBASE_SERVICE_ACCOUNT</strong> وضع المحتوى داخله.</li>
-              </ol>
-            </div>
-
             {firebaseStatus?.parseError && (
               <div className="mt-3 p-2 bg-red-100 dark:bg-red-800/40 rounded border border-red-200 dark:border-red-700">
                 <p className="text-[10px] font-mono text-red-800 dark:text-red-300">Error: {firebaseStatus.parseError}</p>
               </div>
             )}
+            
+            <div className="mt-4 p-3 bg-white/50 dark:bg-black/20 rounded-lg">
+              <p className="text-xs text-gray-700 dark:text-gray-300">
+                تأكد من وجود ملف <code>firebase-service-account.json</code> في المجلد الرئيسي للتطبيق وبداخله بيانات Service Account صحيحة من Firebase.
+              </p>
+            </div>
           </div>
         )}
 
