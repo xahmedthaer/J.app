@@ -30,8 +30,9 @@ service cloud.firestore {
     // Admin check: checks if user is admin in users collection OR matches specific bootstrap email
     function isAdmin() {
       return isSignedIn() && (
-        request.auth.token.email == 'Xahmedthaer@gmail.com' ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.is_admin == true
+        request.auth.token.email.lower() == 'xahmedthaer@gmail.com' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.is_admin == true)
       );
     }
 
@@ -92,9 +93,15 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
-      allow create: if isOwner(userId) && isValidUser(incoming()) && incoming().is_admin == false; // Regular user can't make self admin
+      allow create: if isOwner(userId) && isValidUser(incoming()) && 
+                    (incoming().is_admin == false || request.auth.token.email.lower() == 'xahmedthaer@gmail.com'); // Regular user can't make self admin unless bootstrap
       allow update: if (isOwner(userId) || isAdmin()) && isValidUser(incoming()) && 
                     (isAdmin() || (incoming().is_admin == existing().is_admin)); // Only admin can change admin status
+    }
+
+    match /phone_map/{phone} {
+      allow get: if true; // Only allow reading specific phone mapping if you know the phone number
+      allow create: if isSignedIn(); // Allow creating map during registration
     }
 
     match /products/{productId} {

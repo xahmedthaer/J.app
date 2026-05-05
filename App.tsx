@@ -103,13 +103,12 @@ const App: React.FC = () => {
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
-                await firebaseService.syncUserProfile(user);
-                // Seed after sync just in case
+                // Ensure initial data exists in Firestore
                 import('./services/seedService').then(m => m.seedInitialData());
                 
                 const profile = await firebaseService.syncUserProfile(user);
                 setCurrentUser(profile);
-                loadRealData(profile);
+                if (profile) loadRealData(profile);
             } else {
                 setCurrentUser(null);
                 setProducts(mockProducts);

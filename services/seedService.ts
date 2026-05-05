@@ -1,5 +1,5 @@
 import { collection, getDocs, doc, setDoc } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
+import { db, handleFirestoreError, OperationType } from '../firebaseConfig';
 import { 
   mockProducts, 
   mockCategories, 
@@ -15,20 +15,37 @@ export const seedInitialData = async () => {
       
       // Seed Categories
       for (const cat of mockCategories) {
-        await setDoc(doc(db, 'categories', cat.id), cat);
+        try {
+          await setDoc(doc(db, 'categories', cat.id), cat);
+        } catch (error) {
+          handleFirestoreError(error, OperationType.WRITE, `categories/${cat.id}`);
+        }
       }
       
       // Seed Products
       for (const prod of mockProducts) {
-        await setDoc(doc(db, 'products', prod.id), prod);
+        try {
+          await setDoc(doc(db, 'products', prod.id), prod);
+        } catch (error) {
+          handleFirestoreError(error, OperationType.WRITE, `products/${prod.id}`);
+        }
       }
       
       // Seed Settings
-      await setDoc(doc(db, 'settings', 'global'), mockSiteSettings);
+      try {
+        await setDoc(doc(db, 'settings', 'global'), mockSiteSettings);
+      } catch (error) {
+        handleFirestoreError(error, OperationType.WRITE, 'settings/global');
+      }
       
       // Seed FAQ
       for (const [index, faq] of mockFaqItems.entries()) {
-        await setDoc(doc(db, 'faq', `faq-${index}`), faq);
+        const id = `faq-${index}`;
+        try {
+          await setDoc(doc(db, 'faq', id), faq);
+        } catch (error) {
+          handleFirestoreError(error, OperationType.WRITE, `faq/${id}`);
+        }
       }
       
       console.log('Seeding completed successfully.');

@@ -28,7 +28,25 @@ import {
 } from '../types';
 
 // --- Users ---
-export const syncUserProfile = async (user: any) => {
+export const getUserByPhone = async (phone: string): Promise<User | null> => {
+  try {
+    const mapRef = doc(db, 'phone_map', phone);
+    const mapSnap = await getDoc(mapRef);
+    
+    if (mapSnap.exists()) {
+      const { email } = mapSnap.data();
+      const userQ = query(collection(db, 'users'), where('email', '==', email));
+      const userSnap = await getDocs(userQ);
+      if (!userSnap.empty) return userSnap.docs[0].data() as User;
+    }
+    return null;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, `phone_map/${phone}`);
+    return null;
+  }
+};
+
+export const syncUserProfile = async (user: any, additionalData?: { name?: string, phone?: string }) => {
   if (!user) return null;
   const userRef = doc(db, 'users', user.uid);
   const userDoc = await getDoc(userRef);
@@ -36,16 +54,34 @@ export const syncUserProfile = async (user: any) => {
   if (!userDoc.exists()) {
     const newUser: User = {
       id: user.uid,
-      name: user.displayName || 'مستخدم جديد',
+      name: additionalData?.name || user.displayName || 'مستخدم جديد',
       email: user.email || '',
+      phone: additionalData?.phone || '',
       is_admin: user.email === 'Xahmedthaer@gmail.com', // Bootstrap admin
       registration_date: new Date().toISOString(),
     };
     try {
       await setDoc(userRef, newUser);
+      
+      // If phone is provided, create a map
+      if (newUser.phone) {
+        await setDoc(doc(db, 'phone_map', newUser.phone), { email: newUser.email, uid: newUser.id });
+      }
+      
       return newUser;
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
+    }
+  } else if (additionalData) {
+    // Optional update if data is provided
+    try {
+        await updateDoc(userRef, additionalData);
+        if (additionalData.phone) {
+            await setDoc(doc(db, 'phone_map', additionalData.phone), { email: (userDoc.data() as User).email, uid: user.uid });
+        }
+        return { ...(userDoc.data() as User), ...additionalData };
+    } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
     }
   }
   return userDoc.data() as User;

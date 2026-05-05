@@ -1,5 +1,13 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { 
+    getAuth, 
+    GoogleAuthProvider, 
+    signInWithPopup, 
+    createUserWithEmailAndPassword, 
+    signInWithEmailAndPassword, 
+    sendPasswordResetEmail,
+    signOut
+} from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from './firebase-applet-config.json';
 
@@ -55,6 +63,33 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   throw new Error(JSON.stringify(errInfo));
 }
 
+// Auth Actions
+export const loginWithGoogle = async () => {
+    try {
+        const result = await signInWithPopup(auth, googleProvider);
+        return result.user;
+    } catch (error) {
+        console.error("Login failed", error);
+        throw error;
+    }
+};
+
+export const registerEmailPassword = async (email: string, pass: string) => {
+    return createUserWithEmailAndPassword(auth, email, pass);
+};
+
+export const loginEmailPassword = async (email: string, pass: string) => {
+    return signInWithEmailAndPassword(auth, email, pass);
+};
+
+export const resetPassword = async (email: string) => {
+    return sendPasswordResetEmail(auth, email);
+};
+
+export const logout = async () => {
+    return signOut(auth);
+};
+
 // Check connection
 async function testConnection() {
   try {
@@ -67,13 +102,3 @@ async function testConnection() {
 }
 
 testConnection();
-
-export const loginWithGoogle = async () => {
-    try {
-        const result = await signInWithPopup(auth, googleProvider);
-        return result.user;
-    } catch (error) {
-        console.error("Login failed", error);
-        throw error;
-    }
-};
