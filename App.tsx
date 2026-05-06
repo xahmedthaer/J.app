@@ -22,6 +22,7 @@ import WithdrawalsPage from './components/customer/WithdrawalsPage';
 import StatisticsPage from './components/customer/StatisticsPage';
 import CategoriesPage from './components/customer/CategoriesPage';
 import TicketChatModal from './components/customer/TicketChatModal';
+import { PullToRefresh } from './components/common/PullToRefresh';
 
 export type Page = 'products' | 'orders' | 'account' | 'financial' | 'productDetails' | 'cart' | 'checkout' | 'orderDetails' | 'accountSubPage' | 'statistics' | 'categories';
 export type MainView = 'products' | 'orders' | 'account' | 'financial';
@@ -184,6 +185,13 @@ const App: React.FC = () => {
     const navigateTo = (newPage: Page) => {
         setPageHistory(prev => [...prev, page]);
         setPage(newPage);
+    };
+
+    const handleRefresh = async () => {
+        if (currentUser) {
+            await loadRealData(currentUser);
+            addNotification('تم تحديث البيانات');
+        }
     };
 
     const handleBack = React.useCallback(() => {
@@ -735,7 +743,9 @@ const App: React.FC = () => {
                 setSearchQuery={setGlobalSearchQuery}
             />}
             <main className={`flex-grow overflow-y-auto ${showBottomNav ? 'pb-16' : ''}`}>
-                {renderPage()}
+                <PullToRefresh onRefresh={handleRefresh}>
+                    {renderPage()}
+                </PullToRefresh>
             </main>
             {showBottomNav && <BottomNav activeView={mainView} setActiveView={handleMainViewChange} />}
 
