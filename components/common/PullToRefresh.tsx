@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { motion, useAnimation, useMotionValue, useTransform } from 'motion/react';
+import React, { useState, useRef, useCallback } from 'react';
+import { motion, useAnimation, useMotionValue, useTransform, useSpring } from 'motion/react';
 import { RefreshCw } from 'lucide-react';
 
 interface PullToRefreshProps {
@@ -9,62 +9,76 @@ interface PullToRefreshProps {
 }
 
 const PULL_THRESHOLD = 80;
-const MAX_PULL = 120;
+const MAX_PULL = 130;
 
 export const PullToRefresh: React.FC<PullToRefreshProps> = ({ onRefresh, children, disabled = false }) => {
-  const [isPulling, setIsPulling] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const pullDistance = useMotionValue(0);
+  
+  // Motion values for high performance (bypass React render cycle during pull)
+  const rawPullDistance = useMotionValue(0);
+  
+  // Spring config for buttery smooth motion
+  const pullDistance = useSpring(rawPullDistance, {
+    stiffness: 400,
+    damping: 40,
+    mass: 0.5
+  });
+
   const controls = useAnimation();
   const startY = useRef(0);
+  const isPulling = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const opacity = useTransform(pullDistance, [0, 40], [0, 1]);
-  const rotation = useTransform(pullDistance, [0, MAX_PULL], [0, 360]);
+  // Derived values for indicator
+  const opacity = useTransform(pullDistance, [0, 50], [0, 1]);
+  const rotation = useTransform(pullDistance, [0, MAX_PULL], [0, 540]);
+  const scale = useTransform(pullDistance, [0, PULL_THRESHOLD], [0.8, 1.1]);
 
-  const checkIsAtTop = () => {
+  const checkIsAtTop = useCallback(() => {
     if (!containerRef.current) return true;
     const parent = containerRef.current.parentElement;
     if (parent) {
-      return parent.scrollTop === 0;
+      return parent.scrollTop <= 0;
     }
-    return window.scrollY === 0;
-  };
+    return window.scrollY <= 0;
+  }, []);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (disabled || isRefreshing || !checkIsAtTop()) return;
     startY.current = e.touches[0].clientY;
-    setIsPulling(true);
+    isPulling.current = true;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isPulling || isRefreshing || !checkIsAtTop()) {
-      if (pullDistance.get() > 0) pullDistance.set(0);
-      return;
-    }
+    if (!isPulling.current || isRefreshing) return;
     
     const currentY = e.touches[0].clientY;
-    const distance = Math.max(0, currentY - startY.current);
-    
-    // Apply resistance
-    const dampedDistance = Math.min(MAX_PULL, distance * 0.4);
-    pullDistance.set(dampedDistance);
+    const distance = currentY - startY.current;
 
-    // Prevent body bounce on iOS when pulling
-    if (dampedDistance > 0) {
+    if (distance > 0 && checkIsAtTop()) {
+      // Apply non-linear resistance for a "premium" feel
+      const pull = Math.min(MAX_PULL, distance * 0.5);
+      rawPullDistance.set(pull);
+      
+      // Prevent browser scroll/bounce while we are handlng the pull
       if (e.cancelable) e.preventDefault();
+    } else if (distance < 0) {
+      // User is scrolling up, reset pull
+      rawPullDistance.set(0);
+      isPulling.current = false;
     }
   };
 
   const handleTouchEnd = async () => {
-    if (!isPulling || isRefreshing) return;
+    if (!isPulling.current || isRefreshing) return;
     
-    setIsPulling(false);
-    const distance = pullDistance.get();
+    isPulling.current = false;
+    const distance = rawPullDistance.get();
 
     if (distance >= PULL_THRESHOLD) {
       setIsRefreshing(true);
-      await controls.start({ y: 60 });
+      // Fixed position while refreshing
+      rawPullDistance.set(70);
       
       try {
         await onRefresh();
@@ -72,48 +86,57 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({ onRefresh, childre
         console.error('Refresh failed:', error);
       } finally {
         setIsRefreshing(false);
-        await controls.start({ y: 0 });
-        pullDistance.set(0);
+        rawPullDistance.set(0);
       }
     } else {
-      await controls.start({ y: 0 });
-      pullDistance.set(0);
+      rawPullDistance.set(0);
     }
   };
 
   return (
     <div 
       ref={containerRef}
-      className="relative min-h-full"
+      className="relative min-h-full touch-pan-y"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
+      style={{ willChange: 'transform' }}
     >
-      {/* Pull Indicator */}
+      {/* Pull Indicator Layer */}
       <motion.div 
         style={{ 
-          top: -40,
-          y: isRefreshing ? 60 : pullDistance,
-          opacity: isRefreshing ? 1 : opacity
+          top: 0,
+          left: 0,
+          right: 0,
+          y: pullDistance,
+          opacity: isRefreshing ? 1 : opacity,
+          zIndex: 40
         }}
-        className="absolute left-0 right-0 flex justify-center items-center h-10 z-50 text-cairo"
+        className="absolute flex justify-center items-start pt-4 pointer-events-none"
       >
-        <div className="bg-white dark:bg-gray-800 rounded-full p-2 shadow-md border border-gray-100 dark:border-gray-700">
+        <motion.div 
+          style={{ scale }}
+          className="bg-white dark:bg-gray-800 rounded-full p-2.5 shadow-lg border border-gray-100 dark:border-gray-700 flex items-center justify-center"
+        >
           <motion.div
             style={{ rotate: isRefreshing ? undefined : rotation }}
             animate={isRefreshing ? { rotate: 360 } : undefined}
-            transition={isRefreshing ? { repeat: Infinity, ease: "linear", duration: 0.8 } : undefined}
+            transition={isRefreshing ? { repeat: Infinity, ease: "linear", duration: 0.8 } : { duration: 0 }}
           >
-            <RefreshCw className={`w-5 h-5 ${pullDistance.get() >= PULL_THRESHOLD ? 'text-primary' : 'text-gray-400'}`} />
+            <RefreshCw 
+              className={`w-5 h-5 transition-colors duration-200`} 
+              style={{ color: rawPullDistance.get() >= PULL_THRESHOLD || isRefreshing ? 'var(--color-primary, #3b82f6)' : '#9ca3af' }}
+            />
           </motion.div>
-        </div>
+        </motion.div>
       </motion.div>
 
       {/* Content Container */}
       <motion.div
-        animate={controls}
-        style={{ y: isRefreshing ? 60 : pullDistance }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        style={{ 
+          y: pullDistance,
+        }}
+        className="relative z-10"
       >
         {children}
       </motion.div>
