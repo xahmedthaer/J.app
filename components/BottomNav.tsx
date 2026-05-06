@@ -15,10 +15,12 @@ const NavItem: React.FC<{
   Icon: React.FC<{ className?: string; active?: boolean }>;
   isActive: boolean;
   onClick: () => void;
+  onDoubleClick?: () => void;
   badgeCount?: number;
-}> = ({ label, Icon, isActive, onClick, badgeCount }) => (
+}> = ({ label, Icon, isActive, onClick, onDoubleClick, badgeCount }) => (
   <button 
     onClick={onClick} 
+    onDoubleClick={onDoubleClick}
     className={`flex flex-col items-center justify-center h-full flex-1 relative transition-colors duration-200 group ${isActive ? 'text-primary' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
     aria-label={label}
   >
@@ -54,6 +56,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeView, setActiveView, unread
           Icon={HomeIcon}
           isActive={activeView === 'products'}
           onClick={() => setActiveView('products')}
+          onDoubleClick={() => window.location.reload()}
         />
         <NavItem
           label="الطلبات"

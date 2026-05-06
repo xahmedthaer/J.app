@@ -15,7 +15,7 @@ interface CheckoutPageProps {
     service_fee: number;
   }) => void;
   customers: Customer[];
-  onAddCustomer: (customer: Omit<Customer, 'id' | 'user_id'>) => Customer;
+  onAddCustomer: (customer: Omit<Customer, 'id' | 'user_id'>) => Promise<Customer | null>;
   onUpdateCustomer: (customer: Customer) => void;
   onDeleteCustomer: (customerId: string) => void;
   step: number;
@@ -261,8 +261,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ cartItems, onOrderConfirmed
   
   const totalProfit = useMemo(() => totalCustomerPrice - totalWholesale, [totalCustomerPrice, totalWholesale]);
 
-  const handleCustomerSaveAndContinue = (customerData: Omit<Customer, 'id' | 'user_id'>) => {
-      const finalCustomer = onAddCustomer(customerData);
+  const handleCustomerSaveAndContinue = async (customerData: Omit<Customer, 'id' | 'user_id'>) => {
+      const finalCustomer = await onAddCustomer(customerData);
       setSelectedCustomer(finalCustomer);
       setStep(2);
   };

@@ -575,7 +575,7 @@ const App: React.FC = () => {
                     cartItems={cartItems} 
                     onOrderConfirmed={handleOrderConfirmed}
                     customers={customers.filter(c => c.user_id === currentUser?.id)}
-                    onAddCustomer={handleAddCustomer as any}
+                    onAddCustomer={handleAddCustomer}
                     onUpdateCustomer={handleUpdateCustomer}
                     onDeleteCustomer={handleDeleteCustomer}
                     step={checkoutStep}
@@ -616,7 +616,7 @@ const App: React.FC = () => {
                     userTickets={userTickets}
                     userOrders={userOrders}
                     coupons={[]} 
-                    onAddCustomer={handleAddCustomer as any}
+                    onAddCustomer={handleAddCustomer}
                     onUpdateCustomer={handleUpdateCustomer}
                     onDeleteCustomer={handleDeleteCustomer}
                     onAddProduct={handleAddProduct}
