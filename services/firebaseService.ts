@@ -11,9 +11,11 @@ import {
   orderBy, 
   onSnapshot,
   Timestamp,
-  addDoc
+  addDoc,
+  arrayUnion
 } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType } from '../firebaseConfig';
+
 import { 
   User, 
   Product, 
@@ -192,11 +194,38 @@ export const createOrder = async (orderData: Order) => {
   }
 };
 
+import { triggerNotification } from './notificationService';
+
 export const updateOrderStatus = async (orderId: string, status: Order['status'], adminNote?: string) => {
   try {
+    const orderRef = doc(db, 'orders', orderId);
+    const orderSnap = await getDoc(orderRef);
     const updates: any = { status };
     if (adminNote !== undefined) updates.admin_note = adminNote;
-    await updateDoc(doc(db, 'orders', orderId), updates);
+    await updateDoc(orderRef, updates);
+
+    // Trigger notification
+    if (orderSnap.exists()) {
+      const orderData = orderSnap.data() as Order;
+      let statusText = '';
+      switch(status) {
+        case 'under_implementation': statusText = 'قيد التنفيذ'; break;
+        case 'shipped': statusText = 'تم الشحن'; break;
+        case 'completed': statusText = 'تم التوصيل'; break;
+        case 'cancelled': statusText = 'تم الإلغاء'; break;
+        case 'rejected': statusText = 'تم الرفض'; break;
+        case 'prepared': statusText = 'جاهز'; break;
+        case 'postponed': statusText = 'مؤجل'; break;
+        case 'partially_delivered': statusText = 'توصيل جزئي'; break;
+      }
+      if (statusText) {
+        triggerNotification(
+          orderData.user_id, 
+          'تحديث حالة الطلب', 
+          `تم تغيير حالة طلبك رقم ${orderId} إلى ${statusText}`
+        );
+      }
+    }
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, `orders/${orderId}`);
   }
@@ -212,9 +241,49 @@ export const updateOrder = async (orderId: string, updates: Partial<Order>) => {
 
 export const updateWithdrawalRequest = async (requestId: string, updates: Partial<WithdrawalRequest>) => {
   try {
-    await updateDoc(doc(db, 'withdrawal_requests', requestId), updates);
+    const reqRef = doc(db, 'withdrawal_requests', requestId);
+    const reqSnap = await getDoc(reqRef);
+    await updateDoc(reqRef, updates);
+
+    if (reqSnap.exists() && updates.status === 'completed') {
+      const reqData = reqSnap.data() as WithdrawalRequest;
+      triggerNotification(
+        reqData.user_id,
+        'تم إرسال الأرباح',
+        `تم تحويل مبلغ ${reqData.amount} د.ع إلى حسابك بنجاح`
+      );
+    }
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, `withdrawal_requests/${requestId}`);
+  }
+};
+
+// --- Tickets ---
+export const updateTicketStatus = async (ticketId: string, status: Ticket['status']) => {
+  try {
+    const ticketRef = doc(db, 'tickets', ticketId);
+    await updateDoc(ticketRef, { status });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `tickets/${ticketId}`);
+  }
+};
+
+export const addTicketMessage = async (ticketId: string, message: any, targetUserId: string, isAdminReply: boolean) => {
+  try {
+    const ticketRef = doc(db, 'tickets', ticketId);
+    await updateDoc(ticketRef, {
+      messages: arrayUnion(message)
+    });
+
+    if (isAdminReply) {
+      triggerNotification(
+        targetUserId,
+        'رد جديد على التذكرة',
+        `قام المسؤول بالرد على تذكرتك للطلب #${message.order_id || ''}`
+      );
+    }
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `tickets/${ticketId}`);
   }
 };
 

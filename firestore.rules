@@ -94,9 +94,11 @@ service cloud.firestore {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
       allow create: if isOwner(userId) && isValidUser(incoming()) && 
-                    (incoming().is_admin == false || request.auth.token.email.lower() == 'xahmedthaer@gmail.com'); // Regular user can't make self admin unless bootstrap
-      allow update: if (isOwner(userId) || isAdmin()) && isValidUser(incoming()) && 
-                    (isAdmin() || (incoming().is_admin == existing().is_admin)); // Only admin can change admin status
+                    (incoming().is_admin == false || request.auth.token.email.lower() == 'xahmedthaer@gmail.com');
+      allow update: if (isOwner(userId) || isAdmin()) && (
+        (isValidUser(incoming()) && (isAdmin() || (incoming().is_admin == existing().is_admin))) ||
+        (isOwner(userId) && incoming().diff(existing()).affectedKeys().hasOnly(['fcmTokens']))
+      );
     }
 
     match /phone_map/{phone} {
