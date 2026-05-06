@@ -60,6 +60,24 @@ export const setupOnMessageListener = (callback: (payload: any) => void) => {
   });
 };
 
+export const getNotificationStatus = async () => {
+  if (typeof window === 'undefined') return { supported: false, reason: 'Not in a browser' };
+  if (!('Notification' in window)) return { supported: false, reason: 'المتصفح لا يدعم الإشعارات' };
+  if (!('serviceWorker' in navigator)) return { supported: false, reason: 'المتصفح لا يدعم Service Workers' };
+  if (!window.isSecureContext) return { supported: false, reason: 'يجب أن يكون الاتصال آمناً (HTTPS)' };
+
+  const supported = await isSupported();
+  if (!supported) return { supported: false, reason: 'Firebase Messaging غير مدعوم في هذا الوضع' };
+  if (!VAPID_KEY) return { supported: true, hasVapid: false, reason: 'مفتاح VAPID غير مضبوط في الإعدادات' };
+
+  return {
+    supported: true,
+    hasVapid: true,
+    permission: Notification.permission,
+    reason: Notification.permission === 'granted' ? 'الإشعارات مفعلة' : 'الإشعارات بحاجة لطلب إذن'
+  };
+};
+
 export const triggerNotification = async (targetUserId: string, title: string, body: string, data?: any) => {
   try {
     // 1. Get user tokens from Firestore (best done on server, but we'll fetch them here to pass to our API)

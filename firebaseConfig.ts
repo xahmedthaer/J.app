@@ -15,9 +15,17 @@ import firebaseConfig from './firebase-applet-config.json';
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
-export const messaging = (typeof window !== 'undefined' && 'serviceWorker' in navigator && window.isSecureContext) 
-    ? getMessaging(app) 
-    : null;
+
+let messagingInstance: any = null;
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator && window.isSecureContext) {
+    try {
+        messagingInstance = getMessaging(app);
+    } catch (e) {
+        console.warn('Firebase Messaging is not supported in this browser:', e);
+    }
+}
+
+export const messaging = messagingInstance;
 export const googleProvider = new GoogleAuthProvider();
 
 export enum OperationType {
