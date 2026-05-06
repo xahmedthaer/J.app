@@ -10,7 +10,6 @@ import AdminProductEditPage from './AdminProductEditPage';
 import AdminProductStatsView from './AdminProductStatsView';
 import AdminProductsMainView from './AdminProductsMainView';
 import AdminOrdersView from './AdminOrdersView';
-import AdminBroadcastView from './AdminBroadcastView';
 
 // =================================================================
 // 3. USERS MANAGEMENT VIEW
@@ -395,7 +394,6 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
     { label: 'المنتجات', view: 'products' as AdminView, icon: BoxOpenIcon },
     { label: 'السحوبات', view: 'withdrawals' as AdminView, icon: MoneyBillTransferIcon, badgeCount: pendingWithdrawalsCount },
     { label: 'المستخدمين', view: 'users' as AdminView, icon: UsersGearIcon },
-    { label: 'الإشعارات', view: 'notifications' as AdminView, icon: BellIcon },
     { label: 'الإعدادات', view: 'settings' as AdminView, icon: PaletteIcon },
   ];
 
@@ -430,37 +428,6 @@ const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({
         case 'orders': return <AdminOrdersView orders={orders} onUpdateOrderStatus={onUpdateOrderStatus} onAdminOrderClick={onAdminOrderClick} addNotification={addNotification} setHeaderConfig={setHeaderConfig} onAdminUpdateOrder={onAdminUpdateOrder} />;
         case 'users': return <AdminUsersView users={users} onDeleteUser={onDeleteUser} onUserClick={handleUserClick} />;
         case 'withdrawals': return <AdminWithdrawalsView withdrawalRequests={withdrawalRequests} onProcessWithdrawal={onProcessWithdrawal} users={users} orders={orders} />;
-        case 'notifications': return (
-            <AdminBroadcastView 
-              onSend={async (title, message) => {
-                addNotification('جاري إرسال الإشعار...');
-                try {
-                  const response = await fetch('/api/broadcast', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title, message })
-                  });
-                  
-                  const result = await response.json();
-                  
-                  if (response.ok) {
-                    if (result.sentCount > 0) {
-                      addNotification(`تم إرسال الإشعار لـ ${result.sentCount} مستخدم`);
-                    } else if (result.message) {
-                      addNotification(result.message);
-                    } else {
-                      addNotification('لم يتم العثور على أجهزة مسجلة لإرسال الإشعار لها');
-                    }
-                  } else {
-                    addNotification(`فشل الإرسال: ${result.error || 'خطأ غير معروف'}`);
-                  }
-                } catch (error) {
-                  console.error("Broadcast error:", error);
-                  addNotification('حدث خطأ أثناء الاتصال بالسيرفر');
-                }
-              }} 
-            />
-        );
         case 'settings': return <div className="p-6"><AdminSiteSettingsView faqItems={faqItems} siteSettings={siteSettings} onSetFaqItems={onSetFaqItems} onUpdateSiteSettings={onUpdateSiteSettings} categories={categories} onSetCategories={onSetCategories}/></div>;
         default: return <AdminDashboardOverviewView users={users} orders={orders} />;
     }

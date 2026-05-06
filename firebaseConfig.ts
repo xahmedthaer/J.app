@@ -9,32 +9,12 @@ import {
     signOut
 } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
-import { getMessaging, isSupported } from 'firebase/messaging';
 import firebaseConfig from './firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
-
-// Initialize messaging lazily and safely
-let messagingInstance: any = null;
-
-export const getMessagingInstance = async () => {
-    if (typeof window === 'undefined') return null;
-    if (messagingInstance) return messagingInstance;
-    
-    try {
-        const supported = await isSupported();
-        if (supported) {
-            messagingInstance = getMessaging(app);
-            return messagingInstance;
-        }
-    } catch (e) {
-        console.warn("Firebase Messaging is not supported in this environment:", e);
-    }
-    return null;
-};
 
 export enum OperationType {
   CREATE = 'create',

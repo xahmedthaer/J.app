@@ -143,13 +143,7 @@ const App: React.FC = () => {
                 
                 const profile = await firebaseService.syncUserProfile(user);
                 setCurrentUser(profile);
-                if (profile) {
-                    loadRealData(profile);
-                    // Request notification permission
-                    import('./services/notificationService').then(n => {
-                        n.requestNotificationPermission(profile.id);
-                    });
-                }
+                if (profile) loadRealData(profile);
             } else {
                 setCurrentUser(null);
                 setProducts(mockProducts);
@@ -547,7 +541,6 @@ const App: React.FC = () => {
                     isLoadingWithdrawals={false}
                     onNavigateToWithdrawals={() => handleMainViewChange('financial')}
                     onLogout={handleLogout}
-                    addNotification={addNotification}
                 />;
             case 'financial':
                 return <WithdrawalsPage 
