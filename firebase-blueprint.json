@@ -14,8 +14,7 @@
         "wallet_number": { "type": "string" },
         "is_admin": { "type": "boolean" },
         "registration_date": { "type": "string" },
-        "permissions": { "type": "array", "items": { "type": "string" } },
-        "fcmTokens": { "type": "array", "items": { "type": "string" } }
+        "permissions": { "type": "array", "items": { "type": "string" } }
       },
       "required": ["id", "name", "email", "is_admin"]
     },

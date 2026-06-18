@@ -23,7 +23,6 @@ import StatisticsPage from './components/customer/StatisticsPage';
 import CategoriesPage from './components/customer/CategoriesPage';
 import TicketChatModal from './components/customer/TicketChatModal';
 import { PullToRefresh } from './components/common/PullToRefresh';
-import { requestNotificationPermission, setupOnMessageListener } from './services/notificationService';
 
 export type Page = 'products' | 'orders' | 'account' | 'financial' | 'productDetails' | 'cart' | 'checkout' | 'orderDetails' | 'accountSubPage' | 'statistics' | 'categories';
 export type MainView = 'products' | 'orders' | 'account' | 'financial';
@@ -194,48 +193,6 @@ const App: React.FC = () => {
             addNotification('تم تحديث البيانات');
         }
     };
-
-    const handleAddTicketMessage = async (ticketId: string, text?: string, imageUrl?: string) => {
-        if (!currentUser) return;
-        const ticket = tickets.find(t => t.id === ticketId);
-        if (!ticket) return;
-
-        const newMessage = {
-            id: `msg-${Date.now()}`,
-            sender_id: currentUser.id,
-            sender_name: currentUser.name,
-            text,
-            imageUrl,
-            created_at: new Date().toISOString(),
-            is_admin: currentUser.is_admin || false
-        };
-
-        // If admin is replying, notify the user. 
-        // If user is replying, maybe notify admin (if we had admin tokens, but let's focus on user for now)
-        const targetUserId = currentUser.is_admin ? ticket.user_id : 'admin'; // Admin notification is tricky without a specific admin ID to target, but the request emphasized user notifications.
-        
-        await firebaseService.addTicketMessage(ticketId, newMessage, targetUserId, currentUser.is_admin || false);
-    };
-
-    const handleUpdateTicketStatus = async (ticketId: string, status: Ticket['status']) => {
-        await firebaseService.updateTicketStatus(ticketId, status);
-        addNotification('تم تحديث حالة التذكرة');
-    };
-
-    useEffect(() => {
-        if (currentUser) {
-            requestNotificationPermission(currentUser.id);
-            const unsubscribe = setupOnMessageListener((payload) => {
-                console.log('Received foreground message:', payload);
-                if (payload.notification) {
-                    addNotification(`${payload.notification.title}: ${payload.notification.body}`);
-                }
-            });
-            return () => {
-                if (unsubscribe) unsubscribe();
-            };
-        }
-    }, [currentUser, addNotification]);
 
     const handleBack = React.useCallback(() => {
         if (headerConfig?.showBack && headerConfig.onBack) {
@@ -681,8 +638,8 @@ const App: React.FC = () => {
                     onUpdateSiteSettings={handleUpdateSiteSettings}
                     onSetCategories={handleSetCategories}
                     onAdminOrderClick={handleOrderClick}
-                    onUpdateTicketThreadStatus={handleUpdateTicketStatus}
-                    onAddTicketMessage={handleAddTicketMessage}
+                    onUpdateTicketThreadStatus={() => {}}
+                    onAddTicketMessage={() => {}}
                     onOpenTicketChat={(ticket) => setActiveTicketChat(ticket)}
                     onInitiateTicketThread={() => {}}
                     setHeaderConfig={setHeaderConfig}
@@ -799,9 +756,9 @@ const App: React.FC = () => {
                     order={orders.find(o => o.id === activeTicketChat.order_id)!}
                     currentUser={currentUser!}
                     onClose={() => setActiveTicketChat(null)}
-                    onSendMessage={(text, imageUrl) => handleAddTicketMessage(activeTicketChat.id, text, imageUrl)}
+                    onSendMessage={() => {}}
                     isAdminView={currentUser?.is_admin || false}
-                    onUpdateTicketStatus={(status) => handleUpdateTicketStatus(activeTicketChat.id, status)}
+                    onUpdateTicketStatus={() => {}}
                     addNotification={addNotification}
                 />
             )}
